@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¿Qué veo hoy? · España</title>
+<style>
+:root{color-scheme:dark;--y:#ffff00;--c:#00ffff;--g:#00ff00;--m:#ff00ff;--r:#ff0000;--b:#0000ff}
+*{box-sizing:border-box;border-radius:0}
+body{margin:0;background:#000;color:#fff;font:21px/1.2 "VT323","Courier New",ui-monospace,monospace;letter-spacing:.02em;text-shadow:0 0 3px rgba(255,255,255,.35)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+main{max-width:720px;margin:0 auto;padding:12px 14px 96px}
+.top{display:flex;justify-content:space-between;gap:8px;text-transform:uppercase}
+.top .y{color:var(--y)}.top .w{color:#fff}.top .c{color:var(--c)}
+h1{background:var(--b);color:#fff;font-weight:400;font-size:2.6rem;line-height:1;margin:6px 0 10px;padding:6px 10px;text-transform:uppercase;letter-spacing:.06em}
+h1 small{display:block;color:var(--y);font-size:1.3rem;letter-spacing:.3em}
+h2{display:inline-block;background:var(--c);color:#000;font-weight:400;font-size:1.1rem;text-transform:uppercase;padding:0 10px;margin:22px 0 8px;text-shadow:none}
+.sub{color:var(--c)}.msg{color:var(--y)}small{color:var(--c)}
+a{color:var(--g)}
+.chips,.row{display:flex;flex-wrap:wrap;gap:8px}
+.row{margin-top:10px}
+.chip{font:inherit;text-transform:uppercase;cursor:pointer;background:#000;color:var(--c,#fff);border:2px solid var(--c,#fff);padding:2px 12px;text-shadow:none}
+.chip.on{background:var(--c,#fff);color:var(--f,#000)}
+.chip:disabled{opacity:.3;text-decoration:line-through;cursor:not-allowed}
+.chip i{display:none}
+button.main,button.sec{font:inherit;text-transform:uppercase;cursor:pointer;padding:6px 16px;border:2px solid #fff;text-shadow:none}
+button.main{background:var(--r);color:#fff;width:100%;font-size:1.5rem;margin-top:14px;border-color:var(--r)}
+button.sec{background:#000;color:#fff}
+button.sec:hover{background:#fff;color:#000}
+button:disabled{opacity:.4}
+input{font:inherit;color:var(--y);background:#000;border:2px solid #fff;padding:6px 10px;width:100%;caret-color:var(--g)}
+input::placeholder{color:#888}
+.card{background:#000;border:3px solid var(--g);padding:12px;margin-top:16px;display:flex;gap:16px;flex-wrap:wrap}
+.card img{width:130px;border:3px solid #fff;align-self:flex-start;filter:contrast(1.25) saturate(1.8)}
+.card .b{flex:1;min-width:200px}
+.card h3{color:var(--y);font-weight:400;font-size:1.9rem;line-height:1;margin:0 0 4px;text-transform:uppercase}
+.ep{background:var(--b);color:#fff;font-size:2rem;line-height:1.1;font-weight:400;padding:4px 10px;margin:.4em 0}
+.ep small{display:block;font-size:1.05rem;color:#fff}
+.res{display:grid;gap:6px;margin-top:10px}
+.res button{text-align:left;font:inherit;color:var(--g);background:#000;border:2px solid var(--g);padding:2px 10px;cursor:pointer;text-shadow:none}
+.res button:hover{background:var(--g);color:#000}
+details{margin-top:18px}
+summary{cursor:pointer;color:var(--g);text-transform:uppercase}
+footer{margin-top:34px;font-size:.85rem;color:#aaa}
+.fast{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:#000;padding:2px 2px calc(2px + env(safe-area-inset-bottom,0px))}
+.fast button{font:inherit;font-size:1rem;text-transform:uppercase;border:0;padding:8px 2px;cursor:pointer;color:#000;text-shadow:none}
+[hidden]{display:none!important}
+input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margin-top:6px}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+</head>
+<body>
+<main>
+<div class="top"><span class="y">P888</span><span class="w">Tele-Veo</span><span class="c" id="clk"></span></div>
+<h1>¿Qué veo hoy?<small>España</small></h1>
+<p class="sub">Catálogo real de tus plataformas en España. Un título al azar, y si es serie, un episodio al azar.</p>
+
+<details id="cfg" open>
+  <summary>Clave de TMDB</summary>
+  <p class="sub">Necesitas una clave gratuita de <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org</a> (la «API Key» o el «Token de lectura»). Se guarda solo en tu navegador.</p>
+  <div class="row"><input id="key" placeholder="Pega aquí tu clave" autocomplete="off"><button class="sec" id="saveKey">Guardar y cargar</button></div>
+  <p class="msg" id="cfgMsg"></p>
+</details>
+
+<h2>Plataformas</h2>
+<div class="chips" id="plats"></div>
+<h2>Tipo</h2>
+<div class="chips" id="kinds"></div>
+<div id="dur" hidden><h2>Duración</h2><div><span class="sub">Peli de <b id="durv">sin límite</b></span><input type="range" id="durr" min="60" max="240" step="10" value="240"></div></div>
+<h2>Me apetece…</h2>
+<div class="chips" id="cats"></div>
+<p class="sub" style="margin:6px 0 0">Sin marcar = cualquier cosa. Si marcas varias, saco una al azar.</p>
+<button class="main" id="surprise" disabled>✨ Sorpréndeme</button>
+
+<h2>O busca una serie</h2>
+<div class="row" style="margin-top:0"><input id="q" placeholder="Nombre de la serie"><button class="sec" id="go">Buscar</button></div>
+<div class="res" id="res"></div>
+
+<div id="out" aria-live="polite"><div id="o-tv"></div><div id="o-movie"></div></div>
+<details><summary>Episodios vistos</summary><div class="row"><button class="sec" id="clr">Borrar vistos</button></div></details>
+
+<footer>Datos: TMDB. Disponibilidad en streaming: JustWatch. Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.</footer>
+</main>
+<nav class="fast"><button id="fr" style="background:#f00;color:#fff">Sorprender</button><button id="fg" style="background:#0f0">Otro</button><button id="fy" style="background:#ff0">Visto</button><button id="fc" style="background:#0ff">Buscar</button></nav>
+
+<script>
+const P={netflix:['Netflix','#ff0000',/^netflix/i,'#fff'],disney:['Disney+','#3d5cff',/disney/i,'#fff'],prime:['Prime Video','#00ffff',/^amazon prime video/i,'#000'],hbo:['HBO Max','#ff00ff',/hbo|^max$/i,'#000'],dropout:['Dropout','#ffff00',/dropout/i,'#000'],pluto:['Pluto TV','#00ff00',/^pluto/i,'#000']};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let KEY=ld('qvh-key','')||'2c6005f592032977700dd12ba5929be7',seen=ld('qvh-seen',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
+
+async function api(path,params={}){
+  const u=new URL('https://api.themoviedb.org/3'+path);
+  for(const[k,v]of Object.entries(params))u.searchParams.set(k,v);
+  const h={};
+  if(KEY.length>40)h.Authorization='Bearer '+KEY;else u.searchParams.set('api_key',KEY);
+  const r=await fetch(u,{headers:h});
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
+const C={
+  comedia:{n:'Comedia',m:'35',t:'35'},
+  romance:{n:'Romance',m:'10749',tk:'romance'},
+  drama:{n:'Drama',m:'18',t:'18'},
+  accion:{n:'Acción / aventura',m:'28|12',t:'10759'},
+  scifi:{n:'Ciencia ficción / fantasía',m:'878|14',t:'10765'},
+  terror:{n:'Terror',m:'27',tk:'horror'},
+  misterio:{n:'Misterio / crimen',m:'9648|80',t:'9648|80'},
+  animacion:{n:'Animación',m:'16',t:'16'},
+  docu:{n:'Documental',m:'99',t:'99'},
+  dnd:{n:'Dragones y mazmorras (Dropout)',dnd:1}
+};
+const kwc={};
+async function kw(q){if(q in kwc)return kwc[q];try{const r=await api('/search/keyword',{query:q});const m=r.results.find(x=>x.name.toLowerCase()===q.toLowerCase())||r.results[0];kwc[q]=m?m.id:0}catch(e){kwc[q]=0}return kwc[q]}
+const shuf=a=>[...a].sort(()=>Math.random()-.5);
+const durOK=()=>selK.size===1&&selK.has('movie')&&+$('durr').value<240;
+function chips(){
+  const av=Object.keys(P).filter(k=>(ids[k]||[]).length),all=av.length>0&&av.every(k=>selP.has(k));
+  $('plats').innerHTML=Object.entries(P).map(([k,[n,c,,f]])=>{const has=(ids[k]||[]).length;
+    return `<button class="chip ${selP.has(k)?'on':''}" data-p="${k}" style="--c:${c};--f:${f}" ${has?'':'disabled title="No aparece en España en TMDB"'}>${n}</button>`}).join('')
+    +`<button class="chip" data-all="1">${all?'✖ Ninguna':'✔ Todas'}</button>`;
+  $('kinds').innerHTML=[['tv','Series'],['movie','Pelis']].map(([k,n])=>`<button class="chip ${selK.has(k)?'on':''}" data-k="${k}">${n}</button>`).join('');
+  $('cats').innerHTML=Object.entries(C).map(([k,d])=>`<button class="chip ${selC.has(k)?'on':''}" data-c="${k}"${d.dnd?' style="--c:#ffff00;--f:#000"':''}>${d.n}</button>`).join('');
+  $('dur').hidden=!(selK.size===1&&selK.has('movie'));
+}
+$('plats').onclick=e=>{
+  if(e.target.closest('[data-all]')){const av=Object.keys(P).filter(k=>(ids[k]||[]).length);av.every(k=>selP.has(k))?selP.clear():av.forEach(k=>selP.add(k));chips();return}
+  const b=e.target.closest('[data-p]');if(!b)return;const k=b.dataset.p;selP.has(k)?selP.delete(k):selP.add(k);chips()};
+$('kinds').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;selK.has(k)?selK.delete(k):selK.add(k);chips()};
+$('cats').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const k=b.dataset.c;selC.has(k)?selC.delete(k):selC.add(k);chips()};
+$('durr').oninput=()=>{const v=+$('durr').value;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'};
+
+async function init(){
+  if(!KEY){$('cfgMsg').textContent='Pega tu clave para empezar.';return}
+  $('cfgMsg').textContent='Cargando plataformas de España…';
+  try{
+    const [a,b]=await Promise.all([api('/watch/providers/tv',{watch_region:'ES',language:'es-ES'}),api('/watch/providers/movie',{watch_region:'ES',language:'es-ES'})]);
+    const all=[...a.results,...b.results];ids={};
+    for(const[k,v]of Object.entries(P))ids[k]=[...new Set(all.filter(p=>v[2].test(p.provider_name)).map(p=>p.provider_id))];
+    dropFallback=false;
+    if(!ids.dropout.length){
+      try{const [g1,g2]=await Promise.all([api('/watch/providers/tv'),api('/watch/providers/movie')]);
+        ids.dropout=[...new Set([...g1.results,...g2.results].filter(p=>P.dropout[2].test(p.provider_name)).map(p=>p.provider_id))];
+        dropFallback=ids.dropout.length>0}catch(e){}
+    }
+    dropNet=0;
+    if(!ids.dropout.length){
+      try{net:for(const q of['Dimension 20','Game Changer','Um, Actually']){const s1=await api('/search/tv',{query:q});
+        for(const r of s1.results.slice(0,3)){const d=await api('/tv/'+r.id);const n=(d.networks||[]).find(x=>/dropout/i.test(x.name));if(n){dropNet=n.id;ids.dropout=[n.id];break net}}}}catch(e){}
+    }
+    selP=new Set(Object.keys(P).filter(k=>ids[k].length));
+    const miss=Object.keys(P).filter(k=>!ids[k].length).map(k=>P[k][0]);
+    $('cfgMsg').textContent='Listo.'+(miss.length?` No he encontrado en España: ${miss.join(', ')}.`:'')+(dropFallback?' Dropout no consta en España en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).':'')+(dropNet?' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en España).':'');
+    $('cfg').open=false;$('surprise').disabled=false;chips();
+  }catch(e){$('cfgMsg').textContent='No he podido conectar con TMDB: revisa la clave ('+e.message+').';}
+}
+$('saveKey').onclick=()=>{KEY=$('key').value.trim();sv('qvh-key',KEY);init()};
+$('key').value=KEY;
+
+async function catParams(c,t){
+  const d=C[c];
+  if(d.dnd){if(t!=='tv')return null;const ks=(await Promise.all(['dungeons and dragons','tabletop role-playing game','role playing game'].map(kw))).filter(Boolean);return ks.length?{with_keywords:ks.join('|')}:{__fb:1}}
+  const g=t==='movie'?d.m:d.t;if(g)return{with_genres:g};
+  const q=t==='movie'?d.mk:d.tk;if(q){const id=await kw(q);return id?{with_keywords:id}:null}
+  return null;
+}
+async function query(pl,type,cp){
+  const net=pl==='dropout'&&dropNet;
+  if(net&&type!=='tv')return null;
+  for(const rg of(pl==='dropout'&&dropFallback?['US','GB','CA']:['ES'])){
+    const base=net?{with_networks:dropNet,sort_by:'popularity.desc',language:'es-ES',...cp}
+      :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:pl==='pluto'?'free|ads':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:'es-ES',...cp};
+    if(type==='movie'&&durOK())base['with_runtime.lte']=$('durr').value;
+    const r=await api('/discover/'+type,{...base,page:1});
+    if(r.results.length)return{f:r,base};
+  }
+  return null;
+}
+async function pick(type){
+  for(const c of selC.size?shuf([...selC]):[null]){
+    const cp=c?await catParams(c,type):{};
+    if(cp===null)continue;
+    const dnd=c&&C[c].dnd;
+    if(!(dnd&&cp.__fb))for(const pl of dnd?['dropout']:shuf(selP)){
+      if(!(ids[pl]||[]).length)continue;
+      const q=await query(pl,type,cp);if(!q)continue;
+      const pg=1+Math.floor(Math.random()*Math.min(q.f.total_pages,500));
+      const d=pg===1?q.f:await api('/discover/'+type,{...q.base,page:pg});
+      const res=d.results.length?d.results:q.f.results;
+      const fresh=res.filter(x=>!seen[type+'-'+x.id]);
+      return{it:rnd(fresh.length?fresh:res),src:pl};
+    }
+    if(dnd){const s=await api('/search/tv',{query:'Dimension 20',language:'es-ES'});const l=s.results.filter(x=>/dimension 20|adventuring party/i.test(x.name));if(l.length)return{it:rnd(l),src:'dropout'}}
+  }
+  return null;
+}
+async function draw(type){
+  const o=$('o-'+type);o.innerHTML='<p class="msg">Sorteando '+(type==='tv'?'serie':'peli')+'…</p>';
+  try{
+    const r=await pick(type);
+    if(!r){o.innerHTML='<p class="msg">'+(type==='tv'?'Series':'Pelis')+': nada con estos filtros. Prueba con más plataformas u otra categoría.</p>';return}
+    await show(type,r.it,r.src);
+  }catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
+}
+async function surprise(){
+  if(!selP.size||!selK.size){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';$('o-movie').innerHTML='';return}
+  for(const t of['tv','movie'])if(!selK.has(t))$('o-'+t).innerHTML='';
+  await Promise.all([...selK].map(draw));
+}
+$('surprise').onclick=surprise;
+
+async function show(type,it,src){
+  last[type]={it,src};
+  const title=it.title||it.name;
+  let ep=null,note='';
+  const [prov,det]=await Promise.all([
+    api(`/${type}/${it.id}/watch/providers`).catch(()=>null),
+    type==='tv'?api('/tv/'+it.id,{language:'es-ES'}).catch(()=>null):api('/movie/'+it.id,{language:'es-ES'}).catch(()=>null)]);
+  const es=prov&&prov.results&&prov.results.ES;
+  const names=es?[...new Set([...(es.flatrate||[]),...(es.free||[]),...(es.ads||[])].map(p=>p.provider_name))]:[];
+  if(src==='dropout'&&dropNet&&!names.length)names.push('Dropout (según su canal en TMDB)');
+  if(dropFallback&&prov&&prov.results)for(const rg of['US','GB','CA']){const fl=prov.results[rg]&&prov.results[rg].flatrate;if(fl&&fl.some(p=>ids.dropout.includes(p.provider_id))){names.push('Dropout (catálogo de '+rg+')');break}}
+  if(type==='tv'&&det){
+    const l=[];
+    for(const s of det.seasons||[])if(s.season_number>0)for(let e=1;e<=s.episode_count;e++)if(!seen[`${it.id}-${s.season_number}-${e}`])l.push([s.season_number,e]);
+    if(l.length){ep=rnd(l);try{const sn=await api(`/tv/${it.id}/season/${ep[0]}`,{language:'es-ES'});const x=(sn.episodes||[]).find(z=>z.episode_number===ep[1]);if(x)ep.push(x.name,x.overview)}catch(e){}}
+    else note='¡Te lo has visto todo! Borra los vistos para empezar de nuevo.';
+  }
+  const year=(it.release_date||it.first_air_date||'').slice(0,4);
+  const mins=type==='movie'&&det&&det.runtime?' · '+det.runtime+' min':'';
+  $('o-'+type).innerHTML=`<div class="card">${it.poster_path?`<img src="https://image.tmdb.org/t/p/w342${it.poster_path}" alt="">`:''}<div class="b">
+    <h3>${esc(title)}</h3><small>${type==='tv'?'Serie':'Peli'}${year?' · '+year:''}${mins}${it.vote_average?' · ★ '+it.vote_average.toFixed(1):''}</small>
+    <p><small>${names.length?'En España: '+esc(names.join(', ')):'No aparece en streaming (suscripción) en España ahora mismo.'}</small></p>
+    ${ep?`<div class="ep">T${ep[0]} · E${ep[1]}${ep[2]?`<small>${esc(ep[2])}</small>`:''}</div>${ep[3]?`<p class="sub">${esc(ep[3])}</p>`:''}`:`<p class="sub">${esc(it.overview||'')}</p>`}
+    ${note?`<p class="msg">${note}</p>`:''}
+    <div class="row">${type==='tv'?`<button class="sec" data-a="again" data-t="${type}">🔁 Otro episodio</button>`:''}<button class="sec" data-a="seen" data-t="${type}">✅ Visto</button><button class="sec" data-a="next" data-t="${type}">🎲 Otra ${type==='tv'?'serie':'peli'}</button></div></div></div>`;
+  last[type].ep=ep;
+}
+$('out').onclick=e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const t=b.dataset.t,l=last[t];if(!l)return;const{it,ep,src}=l,a=b.dataset.a;
+  if(a==='again')show(t,it,src);
+  else if(a==='next')draw(t);
+  else if(a==='seen'){seen[ep?`${it.id}-${ep[0]}-${ep[1]}`:`${t}-${it.id}`]=1;sv('qvh-seen',seen);t==='tv'?show(t,it,src):draw(t)}
+};
+async function search(){
+  const q=$('q').value.trim();if(!q)return;
+  try{
+    const r=await api('/search/tv',{query:q,language:'es-ES'});
+    $('res').innerHTML=r.results.slice(0,6).map((x,i)=>`<button data-i="${i}">${esc(x.name)} <small>${(x.first_air_date||'').slice(0,4)}</small></button>`).join('')||'<p class="msg">Sin resultados.</p>';
+    $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';show('tv',r.results[+b.dataset.i])};
+  }catch(e){$('res').innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
+}
+$('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter')search()};
+$('clr').onclick=()=>{seen={};sv('qvh-seen',seen)};
+const tick=()=>{const d=new Date();$('clk').textContent=d.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase().replace(/\./g,'')+' '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};tick();setInterval(tick,1000);
+$('fr').onclick=()=>$('surprise').click();
+$('fg').onclick=()=>{const b=document.querySelector('[data-a="again"]')||document.querySelector('[data-a="next"]');if(b)b.click()};
+$('fy').onclick=()=>{const b=document.querySelector('[data-a="seen"]');if(b)b.click()};
+$('fc').onclick=()=>{$('q').focus();$('q').scrollIntoView({block:'center'})};
+chips();init();
+</script>
+</body>
+</html>
