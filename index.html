@@ -84,7 +84,10 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margi
 <nav class="fast"><button id="fr" style="background:#f00;color:#fff">Sorprender</button><button id="fg" style="background:#0f0">Otro</button><button id="fy" style="background:#ff0">Visto</button><button id="fc" style="background:#0ff">Buscar</button></nav>
 
 <script>
-const P={netflix:['Netflix','#ff0000',/^netflix/i,'#fff'],disney:['Disney+','#3d5cff',/disney/i,'#fff'],prime:['Prime Video','#00ffff',/^amazon prime video/i,'#000'],hbo:['HBO Max','#ff00ff',/hbo|^max$/i,'#000'],dropout:['Dropout','#ffff00',/dropout/i,'#000'],pluto:['Pluto TV','#00ff00',/^pluto/i,'#000']};
+const P={netflix:['Netflix','#ff0000',/^netflix/i,'#fff'],disney:['Disney+','#3d5cff',/disney/i,'#fff'],prime:['Prime Video','#00ffff',/^amazon prime video/i,'#000'],hbo:['HBO Max','#ff00ff',/hbo|^max$/i,'#000'],dropout:['Dropout','#ffff00',/dropout/i,'#000'],pluto:['Pluto TV','#00ff00',/^pluto/i,'#000'],
+ filmin:['Filmin','#ff6ec7',/^filmin/i,'#000'],movistar:['Movistar Plus+','#4da6ff',/movistar/i,'#000'],skyshowtime:['SkyShowtime','#ffffff',/skyshowtime/i,'#000'],
+ apple:['Apple TV+','#bbbbbb',/apple tv\+|apple tv plus/i,'#000',[350]],rtve:['RTVE Play','#b6ff00',/rtve/i,'#000'],crunchyroll:['Crunchyroll','#ff8000',/^crunchyroll/i,'#000']};
+const FREE=['pluto','rtve'];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
@@ -110,6 +113,7 @@ const C={
   terror:{n:'Terror',m:'27',tk:'horror'},
   misterio:{n:'Misterio / crimen',m:'9648|80',t:'9648|80'},
   animacion:{n:'Animación',m:'16',t:'16'},
+  anime:{n:'Anime',mk:'anime',tk:'anime'},
   docu:{n:'Documental',m:'99',t:'99'},
   dnd:{n:'Dragones y mazmorras (Dropout)',dnd:1}
 };
@@ -139,7 +143,7 @@ async function init(){
   try{
     const [a,b]=await Promise.all([api('/watch/providers/tv',{watch_region:'ES',language:'es-ES'}),api('/watch/providers/movie',{watch_region:'ES',language:'es-ES'})]);
     const all=[...a.results,...b.results];ids={};
-    for(const[k,v]of Object.entries(P))ids[k]=[...new Set(all.filter(p=>v[2].test(p.provider_name)).map(p=>p.provider_id))];
+    for(const[k,v]of Object.entries(P))ids[k]=[...new Set(all.filter(p=>(v[2].test(p.provider_name)||(v[4]||[]).includes(p.provider_id))&&!/ channel/i.test(p.provider_name)).map(p=>p.provider_id))];
     dropFallback=false;
     if(!ids.dropout.length){
       try{const [g1,g2]=await Promise.all([api('/watch/providers/tv'),api('/watch/providers/movie')]);
@@ -172,7 +176,7 @@ async function query(pl,type,cp){
   if(net&&type!=='tv')return null;
   for(const rg of(pl==='dropout'&&dropFallback?['US','GB','CA']:['ES'])){
     const base=net?{with_networks:dropNet,sort_by:'popularity.desc',language:'es-ES',...cp}
-      :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:pl==='pluto'?'free|ads':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:'es-ES',...cp};
+      :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:FREE.includes(pl)?'free|ads|flatrate':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:'es-ES',...cp};
     if(type==='movie'&&durOK())base['with_runtime.lte']=$('durr').value;
     const r=await api('/discover/'+type,{...base,page:1});
     if(r.results.length)return{f:r,base};
