@@ -260,7 +260,7 @@ async function search(){
   try{
     const r=await api('/search/tv',{query:q,language:'es-ES'});
     $('res').innerHTML=r.results.slice(0,6).map((x,i)=>`<button data-i="${i}">${esc(x.name)} <small>${(x.first_air_date||'').slice(0,4)}</small></button>`).join('')||'<p class="msg">Sin resultados.</p>';
-    $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';show('tv',r.results[+b.dataset.i])};
+    $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';$('o-movie').innerHTML='';last.movie=null;show('tv',r.results[+b.dataset.i])};
   }catch(e){$('res').innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 $('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter')search()};
