@@ -75,6 +75,7 @@ select{font:inherit;color:var(--y);background:#000;border:2px solid #fff;padding
 .vc .vt{flex:1}
 .vc .vn{min-width:2ch;text-align:right;color:#ff0}
 input.bad{border-color:#f00}
+#out{scroll-margin-top:8px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
@@ -82,6 +83,7 @@ input.bad{border-color:#f00}
 <main>
 <div class="top"><span class="y" id="pg">P888</span><span class="w" id="ph">¡MIRA ESTO!</span><span class="c" id="clk"></span></div>
 <h1>Teletexto<small>¡Mira esto! · <span id="ctry">España</span></small></h1>
+<div class="chips" id="langs" style="margin:6px 0"><button class="chip" data-l="es">ES</button><button class="chip" data-l="ca">CA</button><button class="chip" data-l="en">EN</button></div>
 <p class="sub" id="tag">Catálogo real de tus plataformas en España. Un título al azar, y si es serie, un episodio al azar.</p>
 
 <details id="cfg" open>
@@ -95,16 +97,16 @@ input.bad{border-color:#f00}
 <select id="reg" aria-label="País"></select>
 <h2>Plataformas</h2>
 <div class="chips" id="plats"></div>
-<h2>Tipo</h2>
-<div class="chips" id="kinds"></div>
+<h2>Tipo · Años</h2>
+<div class="chips" style="align-items:center"><div class="chips" id="kinds"></div><input id="yr" style="width:11em" list="yrl" placeholder="Años: 1955-1998" title="Un tramo (1955-1998), un año, o «1990-» para «desde 1990»" aria-label="Años" inputmode="numeric" autocomplete="off"><datalist id="yrl"><option value="-1979" label="Clásicos (hasta 1979)"><option value="1980-1989" label="80s"><option value="1990-1999" label="90s"><option value="2000-2009" label="2000s"><option value="2010-2019" label="2010s"><option value="2020-" label="Recientes (desde 2020)"></datalist></div>
 <div id="dur" hidden><h2>Duración</h2><div><span class="sub">Peli de <b id="durv">sin límite</b></span><input type="range" id="durr" min="60" max="240" step="10" value="240"></div></div>
-<h2>Años</h2>
-<input id="yr" placeholder="1955-1998" inputmode="numeric" autocomplete="off">
-<div class="chips" id="yrs" style="margin-top:8px"><button class="chip" data-y="-1979">Clásicos</button><button class="chip" data-y="1980-1989">80s</button><button class="chip" data-y="1990-1999">90s</button><button class="chip" data-y="2000-2009">2000s</button><button class="chip" data-y="2010-2019">2010s</button><button class="chip" data-y="2020-">Recientes</button><button class="chip" data-y="">✖</button></div>
-<p class="sub" style="margin:6px 0 0">Escribe un tramo (1955-1998), un año o «1990-» para «desde 1990».</p>
 <h2>Me apetece…</h2>
 <div class="chips" id="cats"></div>
 <p class="sub" style="margin:6px 0 0">Sin marcar = cualquier cosa. Si marcas varias, saco una al azar.</p>
+<h2>Programación</h2>
+<div class="chips" id="ctxs"></div>
+<div class="row"><button class="chip" id="ctxOnly">Solo mis plataformas</button><button class="sec" id="guide" disabled>📺 Ver programación</button></div>
+<p class="sub" style="margin:6px 0 0">Elige un contexto y «Pulsa y mira» y «Noche en grupo» se ciñen a él (ignora categorías y años).</p>
 <button class="main" id="surprise" disabled>▶ ¡Pulsa y mira!</button>
 <div class="row"><button class="sec" id="vote" disabled>🗳 Noche en grupo</button><label class="sub">¿Cuántos votáis? <select id="nv" style="width:auto"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label></div>
 
@@ -133,6 +135,82 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+// --- Idiomas (es / ca / en): el texto base está en castellano y se traduce al vuelo ---
+const I18N={
+'¡Mira esto! ·':['Mira això! ·','Check this out! ·'],
+'España':['Espanya','Spain'],'México':['Mèxic','Mexico'],'Colombia':['Colòmbia','Colombia'],'Chile':['Xile','Chile'],'Perú':['Perú','Peru'],'Uruguay':['Uruguai','Uruguay'],'EE. UU.':['EUA','USA'],'Francia':['França','France'],'Italia':['Itàlia','Italy'],'Alemania':['Alemanya','Germany'],'Reino Unido':['Regne Unit','UK'],
+'Clave de TMDB':['Clau de TMDB','TMDB key'],
+'Necesitas una clave gratuita de':['Necessites una clau gratuïta de','You need a free key from'],
+'(la «API Key» o el «Token de lectura»). Se guarda solo en tu navegador.':['(la «API Key» o el «Token de lectura»). Es desa només al teu navegador.','(the “API Key” or the “Read Access Token”). It is stored only in your browser.'],
+'Pega aquí tu clave':['Enganxa aquí la teva clau','Paste your key here'],'Guardar y cargar':['Desar i carregar','Save & load'],
+'Pega tu clave para empezar.':['Enganxa la teva clau per començar.','Paste your key to start.'],
+'País':['País','Country'],'Plataformas':['Plataformes','Platforms'],'✔ Todas':['✔ Totes','✔ All'],'✖ Ninguna':['✖ Cap','✖ None'],
+'Tipo · Años':['Tipus · Anys','Type · Years'],'Series':['Sèries','Series'],'Pelis':['Pelis','Movies'],
+'Años: 1955-1998':['Anys: 1955-1998','Years: 1955-1998'],'Años':['Anys','Years'],
+'Un tramo (1955-1998), un año, o «1990-» para «desde 1990»':['Un tram (1955-1998), un any, o «1990-» per a «des del 1990»','A range (1955-1998), a year, or “1990-” for “from 1990”'],
+'Clásicos (hasta 1979)':['Clàssics (fins al 1979)','Classics (up to 1979)'],'Recientes (desde 2020)':['Recents (des del 2020)','Recent (since 2020)'],
+'Duración':['Durada','Length'],'Peli de':['Peli de','Movie'],'sin límite':['sense límit','no limit'],
+'Me apetece…':['Em ve de gust…','I feel like…'],
+'Sin marcar = cualquier cosa. Si marcas varias, saco una al azar.':['Sense marcar = qualsevol cosa. Si en marques diverses, en trio una a l’atzar.','None selected = anything. If you pick several, I’ll choose one at random.'],
+'Comedia':['Comèdia','Comedy'],'Romance':['Romanç','Romance'],'Acción / aventura':['Acció / aventura','Action / adventure'],'Ciencia ficción / fantasía':['Ciència-ficció / fantasia','Sci-fi / fantasy'],'Terror':['Terror','Horror'],'Misterio / crimen':['Misteri / crim','Mystery / crime'],'Animación':['Animació','Animation'],'Documental':['Documental','Documentary'],'Dragones y mazmorras (Dropout)':['Dracs i masmorres (Dropout)','Dungeons & Dragons (Dropout)'],
+'Programación':['Programació','Schedule'],'Solo mis plataformas':['Només les meves plataformes','Only my platforms'],'📺 Ver programación':['📺 Veure programació','📺 Show schedule'],
+'Elige un contexto y «Pulsa y mira» y «Noche en grupo» se ciñen a él (ignora categorías y años).':['Tria un context i «Prem i mira» i «Nit en grup» s’hi cenyeixen (ignora categories i anys).','Pick a context and “Press & watch” and “Group night” will stick to it (ignores categories and years).'],
+'TGIF · EE. UU. años 90':['TGIF · EUA anys 90','TGIF · USA 90s'],'Tele española 2010s':['Tele espanyola dels 2010','Spanish TV 2010s'],'Sobremesa de domingo':['Sobretaula de diumenge','Sunday afternoon'],'Terror de serie B':['Terror de sèrie B','B-movie horror'],'Dibujos de los 90':['Dibuixos dels 90','90s cartoons'],'Dibujos de los 2000':['Dibuixos dels 2000','2000s cartoons'],'Cineclub queer':['Cineclub queer','Queer film club'],'Tarde en casa de la yaya':['Tarda a casa de l’àvia','Afternoon at grandma’s'],'3XL · juvenil en català':['3XL · juvenil en català','3XL · Catalan youth TV'],
+'▶ ¡Pulsa y mira!':['▶ Prem i mira!','▶ Press & watch!'],'🗳 Noche en grupo':['🗳 Nit en grup','🗳 Group night'],'¿Cuántos votáis?':['Quants voteu?','How many voting?'],
+'O busca una serie':['O cerca una sèrie','Or search for a series'],'Nombre de la serie':['Nom de la sèrie','Series name'],'Buscar':['Cerca','Search'],
+'🔁 Otro episodio':['🔁 Un altre episodi','🔁 Another episode'],'✅ Episodio visto':['✅ Episodi vist','✅ Episode seen'],'👁 Ya la vi':['👁 Ja l’he vista','👁 Seen it'],'🚫 No me interesa':['🚫 No m’interessa','🚫 Not interested'],'🎲 Otra serie':['🎲 Una altra sèrie','🎲 Another series'],'🎲 Otra peli':['🎲 Una altra peli','🎲 Another movie'],'📍 Dónde verlo':['📍 On veure-ho','📍 Where to watch'],'▶ Tráiler':['▶ Tràiler','▶ Trailer'],'📤 Compartir':['📤 Comparteix','📤 Share'],'¡Copiado!':['Copiat!','Copied!'],'Copia y pega:':['Copia i enganxa:','Copy and paste:'],'📺 Esta noche:':['📺 Aquesta nit:','📺 Tonight:'],
+'Mis listas':['Les meves llistes','My lists'],'Borrar episodios vistos':['Esborrar episodis vistos','Clear watched episodes'],'Borrar descartados':['Esborrar descartats','Clear dismissed'],
+'Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.':['Aquest producte utilitza l’API de TMDB però no està avalat ni certificat per TMDB.',''],
+'Datos de disponibilidad en streaming:':['Dades de disponibilitat en streaming:','Streaming availability data:'],
+'. Esta web no guarda datos de nadie: tus ajustes se quedan en tu navegador.':['. Aquest web no desa dades de ningú: els teus ajustos es queden al teu navegador.','. This site doesn’t store anyone’s data: your settings stay in your browser.'],
+'¡Pulsa!':['Prem!','Press!'],'Otro':['Un altre','Next'],'Visto':['Vist','Seen'],
+'Sorteando serie…':['Sortejant sèrie…','Drawing a series…'],'Sorteando peli…':['Sortejant peli…','Drawing a movie…'],'Sorteando opciones…':['Sortejant opcions…','Drawing options…'],'Preparando programación…':['Preparant programació…','Preparing schedule…'],
+'Elige primero un contexto.':['Tria primer un context.','Pick a context first.'],'Activa al menos una plataforma y un tipo.':['Activa almenys una plataforma i un tipus.','Turn on at least one platform and one type.'],'Sin resultados.':['Sense resultats.','No results.'],
+'¡Te lo has visto todo! Borra los vistos para empezar de nuevo.':['Te l’has vist tot! Esborra els vistos per començar de nou.','You’ve seen it all! Clear the watched list to start over.'],
+'PÁGINA NO ENCONTRADA':['PÀGINA NO TROBADA','PAGE NOT FOUND'],'VOTACIÓN':['VOTACIÓ','VOTE'],'Votación':['Votació','Vote'],'Pasaos el móvil: cada persona toca su opción.':['Passeu-vos el mòbil: cada persona toca la seva opció.','Pass the phone around: everyone taps their pick.'],
+'↺ Reiniciar votos':['↺ Reinicia els vots','↺ Reset votes'],'🗳 Nueva votación':['🗳 Nova votació','🗳 New vote'],'Empate: decide el azar':['Empat: decideix l’atzar','Tie: chance decides'],
+'Ver ficha':['Veure fitxa','View details'],'🔁 Otra programación':['🔁 Una altra programació','🔁 Another schedule'],'PROGRAMACIÓN DE HOY':['PROGRAMACIÓ D’AVUI','TODAY’S SCHEDULE'],'Serie':['Sèrie','Series'],'Peli':['Peli','Movie']
+};
+const PAT=[
+[/^T(\d+) · E(\d+)$/,(g,l)=>(l?'S':'T')+g[1]+' · E'+g[2]],
+[/^de (\d+) en esa temporada$/,(g,l)=>l?'of '+g[1]+' this season':'de '+g[1]+' en aquesta temporada'],
+[/^Votos: (\d+)\/(\d+)$/,(g,l)=>(l?'Votes: ':'Vots: ')+g[1]+'/'+g[2]],
+[/^(\d+) descartados · (\d+) episodios vistos$/,(g,l)=>l?g[1]+' dismissed · '+g[2]+' episodes watched':g[1]+' descartats · '+g[2]+' episodis vistos'],
+[/^hasta (\d+) min$/,(g,l)=>(l?'up to ':'fins a ')+g[1]+' min'],
+[/^TEMPORADA (.+)$/,(g,l)=>(l?'SEASON ':'TEMPORADA ')+g[1]],
+[/^En (.+?): (.+)$/,(g,l)=>(l?'In ':'A ')+X(g[1],l)+': '+g[2]],
+[/^No aparece en streaming \(suscripción\) en (.+) ahora mismo\.$/,(g,l)=>l?'Not on subscription streaming in '+X(g[1],l)+' right now.':'Ara mateix no apareix en streaming (subscripció) a '+X(g[1],l)+'.'],
+[/^(Serie|Peli)( · .*)$/,(g,l)=>X(g[1],l)+g[2]],
+[/^(.+): nada con estos filtros\. Prueba con más plataformas, otra categoría u otro tramo de años\.$/,(g,l)=>l?X(g[1],l)+': nothing matches these filters. Try more platforms, another category or a different year range.':X(g[1],l)+': res amb aquests filtres. Prova amb més plataformes, una altra categoria o un altre tram d’anys.'],
+[/^No aparece en (.+) en TMDB$/,(g,l)=>l?'Not listed in '+X(g[1],l)+' on TMDB':'No apareix a '+X(g[1],l)+' a TMDB'],
+[/^P100 · (.+)$/,(g,l)=>'P100 · '+tlU(g[1],l)]
+];
+const PHL={ca:['EL CLUB SUPER3','CARTA D’AJUST','TORNEM DESPRÉS DE LA PUBLI','TARDA DE SOBRETAULA','EL TEMPS: SOFÀ I MANTA','PREM EL BOTÓ VERMELL!','SENSE TALLS PUBLICITARIS','ESTEM EN DIRECTE','SESSIÓ DOBLE','TELENOTÍCIES VESPRE'],en:['TEST CARD','BACK AFTER THE BREAK','WEATHER: SOFA & BLANKET','PRESS THE RED BUTTON','LIVE NOW','NO AD BREAKS','LATE NIGHT MOVIE','DAYTIME TV','ASK THE AUDIENCE','FINAL ROUND']};
+const TAGL={ca:['Sense scroll infinit: l’atzar decideix per tu.','Pàgina 888: l’únic canal sense anuncis de pizzes.','Deixa de buscar. Comença a mirar.','Un episodi a l’atzar, com els d’abans: el que facin.','El teu comandament és de vacances. Prem el botó vermell.','Teletext de debò: zero pestanyes, zero dubtes.'],en:['No infinite scroll: chance decides for you.','Page 888: the only channel with no pizza ads.','Stop searching. Start watching.','A random episode, like the old days: whatever’s on.','Your remote is on holiday. Press the red button.','Real teletext: zero tabs, zero doubts.']};
+let lang=ld('qvh-lang',null);
+if(!['es','ca','en'].includes(lang)){const n=(navigator.language||'es').slice(0,2);lang=['ca','en'].includes(n)?n:'es'}
+const LG=()=>({es:'es-ES',ca:'ca-ES',en:'en-US'}[lang]);
+function X(s,l){const e=I18N[s];return e&&e[l]!=null?e[l]:s}
+function tlU(s,l){const k=Object.keys(I18N).find(x=>x.toUpperCase()===s);return k?X(k,l).toUpperCase():s}
+function tl(s){
+  if(lang==='es'||!s)return s;
+  const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/),k=m[2];if(!k)return s;
+  const l=lang==='en'?1:0;let t=I18N[k]?I18N[k][l]:null;
+  if(t==null)for(const[re,f]of PAT){const g=k.match(re);if(g){t=f(g,l);break}}
+  return t==null?s:m[1]+t+m[3];
+}
+const TN=new WeakMap(),AN=new WeakMap(),AT=['placeholder','title','aria-label','label'];
+const skip=n=>n.parentNode&&/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName);
+function doText(n){if(skip(n))return;const v=n.nodeValue,r=TN.get(n);if(r&&v===r.t)return;const t=tl(v);TN.set(n,{o:v,t});if(t!==v)n.nodeValue=t}
+function doEl(e){if(!e.hasAttribute)return;for(const a of AT){if(!e.hasAttribute(a))continue;const v=e.getAttribute(a),r=AN.get(e)||{};if(r[a]&&r[a].t===v)continue;const t=tl(v);r[a]={o:v,t};AN.set(e,r);if(t!==v)e.setAttribute(a,t)}}
+function walk(n){if(n.nodeType===3){doText(n);return}if(n.nodeType!==1||/^(SCRIPT|STYLE)$/.test(n.nodeName))return;doEl(n);n.childNodes.forEach(walk)}
+function retr(){
+  const w=document.createTreeWalker(document.body,5);let n;
+  while(n=w.nextNode()){
+    if(n.nodeType===3){if(skip(n))continue;const r=TN.get(n);if(r){const t=tl(r.o);TN.set(n,{o:r.o,t});if(n.nodeValue!==t)n.nodeValue=t}else doText(n)}
+    else{const r=AN.get(n);if(r)for(const a in r){const t=tl(r[a].o);r[a]={o:r[a].o,t};n.setAttribute(a,t)}doEl(n)}
+  }
+}
 // --- Ajustes para publicar ---
 const PROXY='https://teletexto-api.mikytak.workers.dev';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
 const EMBED_KEY='';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
@@ -172,6 +250,8 @@ function chips(){
   $('kinds').innerHTML=[['tv','Series'],['movie','Pelis']].map(([k,n])=>`<button class="chip ${selK.has(k)?'on':''}" data-k="${k}">${n}</button>`).join('');
   $('cats').innerHTML=Object.entries(C).map(([k,d])=>`<button class="chip ${selC.has(k)?'on':''}" data-c="${k}"${d.dnd?' style="--c:#ffff00;--f:#000"':''}>${d.n}</button>`).join('');
   $('dur').hidden=!(selK.size===1&&selK.has('movie'));
+  $('ctxs').innerHTML=Object.entries(CTX).map(([k,c])=>`<button class="chip ${ctxK===k?'on':''}" data-x="${k}">${c.n}</button>`).join('');
+  $('ctxOnly').className='chip'+(ctxOnly?' on':'');
 }
 $('plats').onclick=e=>{
   if(e.target.closest('[data-all]')){const av=Object.keys(P).filter(k=>(ids[k]||[]).length);av.every(k=>selP.has(k))?selP.clear():av.forEach(k=>selP.add(k));chips();sp();return}
@@ -182,10 +262,10 @@ $('durr').oninput=()=>{const v=+$('durr').value;$('durv').textContent=v>=240?'si
 
 async function init(){
   if(PROXY)$('cfg').hidden=true;
-  if(!KEY&&!PROXY){$('cfgMsg').textContent='Pega tu clave para empezar.';return}
-  $('cfgMsg').textContent='Cargando plataformas de '+CT[REG]+'…';
+  if(!KEY&&!PROXY){$('cfgMsg').textContent=tl('Pega tu clave para empezar.');return}
+  $('cfgMsg').textContent=lang==='es'?'Cargando plataformas de '+CT[REG]+'…':lang==='ca'?'Carregant plataformes de '+X(CT[REG],0)+'…':'Loading platforms for '+X(CT[REG],1)+'…';
   try{
-    const [a,b]=await Promise.all([api('/watch/providers/tv',{watch_region:REG,language:'es-ES'}),api('/watch/providers/movie',{watch_region:REG,language:'es-ES'})]);
+    const [a,b]=await Promise.all([api('/watch/providers/tv',{watch_region:REG,language:LG()}),api('/watch/providers/movie',{watch_region:REG,language:LG()})]);
     const all=[...a.results,...b.results];ids={};
     for(const[k,v]of Object.entries(P))ids[k]=[...new Set(all.filter(p=>(v[2].test(p.provider_name)||(v[4]||[]).includes(p.provider_id))&&!/ channel/i.test(p.provider_name)).map(p=>p.provider_id))];
     dropFallback=false;
@@ -201,14 +281,85 @@ async function init(){
     }
     {const all=Object.keys(P).filter(k=>ids[k].length),sv0=keepSel&&pf&&pf.p?pf.p.filter(k=>all.includes(k)):[];selP=new Set(sv0.length?sv0:all);keepSel=false}
     const miss=Object.keys(P).filter(k=>!ids[k].length).map(k=>P[k][0]);
-    $('cfgMsg').textContent='Listo.'+(miss.length?` No he encontrado en ${CT[REG]}: ${miss.join(', ')}.`:'')+(dropFallback?' Dropout no consta en '+CT[REG]+' en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).':'')+(dropNet?' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en España).':'');
-    $('cfg').open=false;$('surprise').disabled=false;$('vote').disabled=false;chips();
-  }catch(e){$('cfgMsg').textContent='No he podido conectar con TMDB: revisa la clave ('+e.message+').';}
+    {const L=lang==='es'?0:lang==='ca'?1:2,c=L?X(CT[REG],L-1):CT[REG];
+    const W=[['Listo.',' No he encontrado en '+c+': '+miss.join(', ')+'.',' Dropout no consta en '+c+' en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).',' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en '+c+').'],
+      ['Fet.',' No he trobat a '+c+': '+miss.join(', ')+'.',' Dropout no consta a '+c+' a TMDB: faig servir el catàleg dels EUA/Regne Unit/Canadà (sol ser molt semblant).',' Dropout: el cerco pel seu canal a TMDB (només sèries, sense comprovar la disponibilitat a '+c+').'],
+      ['Ready.',' Not found in '+c+': '+miss.join(', ')+'.',' Dropout isn’t listed in '+c+' on TMDB: using its US/UK/Canada catalogue (usually very similar).',' Dropout: looked up by its TMDB network (series only, availability in '+c+' not checked).']][L];
+    $('cfgMsg').textContent=W[0]+(miss.length?W[1]:'')+(dropFallback?W[2]:'')+(dropNet?W[3]:'')}
+    $('cfg').open=false;$('surprise').disabled=false;$('vote').disabled=false;$('guide').disabled=false;chips();
+  }catch(e){$('cfgMsg').textContent=(lang==='es'?'No he podido conectar con TMDB ('+e.message+').'+(PROXY?'':' Revisa la clave.'):lang==='ca'?'No he pogut connectar amb TMDB ('+e.message+').'+(PROXY?'':' Revisa la clau.'):'Couldn’t connect to TMDB ('+e.message+').'+(PROXY?'':' Check your key.'));}
 }
 $('saveKey').onclick=()=>{KEY=$('key').value.trim();sv('qvh-key',KEY);init()};
 $('key').value=KEY;
 
 function yrs(){const v=$('yr').value.trim();$('yr').classList.remove('bad');if(!v)return null;let a,b,m=v.match(/^(\d{4})?\s*[-–—]\s*(\d{4})?$/);if(m&&(m[1]||m[2])){a=m[1];b=m[2]}else if(/^\d{4}$/.test(v)){a=b=v}else{$('yr').classList.add('bad');return null}if(a&&b&&+a>+b){[a,b]=[b,a]}return[a||null,b||null]}
+// Contextos curados. Fuentes: alineaciones TGIF (TV Guide, Wikipedia), Teddy Award y Queer Palm (Wikipedia),
+// programación del Club Super3 / canal Super3 / 3XL (3Cat, Wikipedia), más conocimiento general de tele.
+// Cada título se busca en TMDB al usarlo (formato "Título|Año").
+const L=s=>s.split(';').map(x=>{const[t,y]=x.split('|');return[t.trim(),+y]});
+const CTX={
+ tgif:{n:'TGIF · EE. UU. años 90',type:'tv',
+  list:L(`Full House|1987;Family Matters|1989;Perfect Strangers|1986;Just the Ten of Us|1988;Going Places|1990;Step by Step|1991;Baby Talk|1991;Dinosaurs|1991;Camp Wilder|1992;Hangin' with Mr. Cooper|1992;Boy Meets World|1993;Sister, Sister|1994;Clueless|1996;Sabrina, the Teenage Witch|1996;Teen Angel|1997;You Wish|1997;Brother's Keeper|1998;Two of a Kind|1998`),
+  lineups:[['1989-90',L(`Full House|1987;Family Matters|1989;Perfect Strangers|1986;Just the Ten of Us|1988`)],['1990-91',L(`Full House|1987;Family Matters|1989;Perfect Strangers|1986;Going Places|1990`)]]},
+ tele10:{n:'Tele española 2010s',type:'tv',list:L(`Aída|2005;Cuéntame cómo pasó|2001;Los hombres de Paco|2005;Física o química|2008;Gran Hotel|2011;Isabel|2012;El barco|2011;Velvet|2014;El tiempo entre costuras|2013;Águila Roja|2009;Los protegidos|2010;El príncipe|2014;El Ministerio del Tiempo|2015;La que se avecina|2007;Allí abajo|2015;Con el culo al aire|2012;Vis a vis|2015;Las chicas del cable|2017;La casa de papel|2017;Merlí|2015;Polseres vermelles|2011;Doctor Mateo|2009;Homicidios|2011;Luna, el misterio de Calenda|2012;Sin identidad|2014;Amar es para siempre|2013;El secreto de Puente Viejo|2011;Seis hermanas|2015;Servir y proteger|2017;Mar de plástico|2015;Cites|2016;La embajada|2016;Anclados|2015;Sé quién eres|2017;Tierra de lobos|2010;Frágiles|2012;La pecera de Eva|2010;Olmos y Robles|2015;Centro médico|2017;Cuerpo de élite|2018;El accidente|2017`)},
+ sobre:{n:'Sobremesa de domingo',type:'movie',list:L(`Bienvenido, Mister Marshall|1953;Plácido|1961;El verdugo|1963;La escopeta nacional|1978;El crack|1981;Volver a empezar|1982;El cochecito|1960;Los santos inocentes|1984;El espíritu de la colmena|1973;Furtivos|1975;La vaquilla|1985;Mujeres al borde de un ataque de nervios|1988;El pisito|1959;Calle Mayor|1956;Surcos|1951;Atraco a las tres|1962;Amanece, que no es poco|1989;Los ladrones somos gente honrada|1956;La gran familia|1962;Historias de la radio|1955;Marcelino, pan y vino|1955;La colmena|1982;Las bicicletas son para el verano|1984;El Sur|1983;Tasio|1984;El bosque animado|1987;Esa pareja feliz|1953;El extraño viaje|1964;Sesión continua|1984;Mi querida señorita|1972;Tristana|1970;Viridiana|1961`)},
+ terrorb:{n:'Terror de serie B',type:'movie',list:L(`Troll 2|1990;Sleepaway Camp|1983;Killer Klowns from Outer Space|1988;The Blob|1988;The Slumber Party Massacre|1982;Night of the Creeps|1986;Chopping Mall|1986;The Return of the Living Dead|1985;Basket Case|1982;Tammy and the T-Rex|1994;Plan 9 from Outer Space|1957;Attack of the Killer Tomatoes!|1978;The Toxic Avenger|1984;Re-Animator|1985;Death Bed: The Bed That Eats|1977;Zombi 2|1979;Leprechaun|1993;Puppet Master|1989;Critters|1986;Ghoulies|1985;Sharknado|2013;Piranha|1978;El jorobado de la Morgue|1973;Pánico en el Transiberiano|1972;La noche del terror ciego|1972;The Evil Dead|1981;Cabin Fever|2002;Slither|2006;Tremors|1990;Humanoids from the Deep|1980`)},
+ d90:{n:'Dibujos de los 90',type:'tv',list:L(`Dragon Ball Z|1989;Sailor Moon|1992;Pokémon|1997;Shin-chan|1992;Las tres mellizas|1997;Animaniacs|1993;Pinky and the Brain|1995;Rugrats|1991;Hey Arnold!|1996;Doug|1991;Dexter's Laboratory|1996;Johnny Bravo|1997;Cow and Chicken|1997;Ed, Edd n Eddy|1999;The Powerpuff Girls|1998;Rocko's Modern Life|1993;The Ren & Stimpy Show|1991;Gargoyles|1994;Batman: The Animated Series|1992;X-Men|1992;Spider-Man|1994;Darkwing Duck|1991;TaleSpin|1990;Tiny Toon Adventures|1990;Digimon Adventure|1999;Slam Dunk|1993;Cardcaptor Sakura|1998;Marsupilami|1993;The Simpsons|1989;Captain Planet and the Planeteers|1990;Saint Seiya|1986;Chip 'n Dale: Rescue Rangers|1989;Aaahh!!! Real Monsters|1994;The Magic School Bus|1994`)},
+ d00:{n:'Dibujos de los 2000',type:'tv',list:L(`SpongeBob SquarePants|1999;The Fairly OddParents|2001;Jimmy Neutron: Boy Genius|2002;Naruto|2002;Yu-Gi-Oh!|2000;Phineas and Ferb|2007;Avatar: The Last Airbender|2005;Teen Titans|2003;Ben 10|2005;Foster's Home for Imaginary Friends|2004;Kim Possible|2002;Totally Spies!|2001;Code Lyoko|2003;Futurama|1999;Family Guy|1999;Samurai Jack|2001;Danny Phantom|2004;Bleach|2004;One Piece|1999;Inuyasha|2000;Fullmetal Alchemist|2003;Winx Club|2004;W.I.T.C.H.|2004;Martin Mystery|2003;Chowder|2007;The Grim Adventures of Billy & Mandy|2001;Codename: Kids Next Door|2002;Courage the Cowardly Dog|1999;Pucca|2006;Shaman King|2001;Fruits Basket|2001;Digimon Frontier|2002;Camp Lazlo|2005;El Chavo animado|2006`)},
+ queer:{n:'Cineclub queer',type:'movie',list:L(`La ley del deseo|1987;Looking for Langston|1989;Coming Out|1989;Poison|1991;Together Alone|1991;Wittgenstein|1993;Fresa y chocolate|1993;Go Fish|1994;Priest|1994;The Last Supper|1995;The Watermelon Woman|1996;All Over Me|1997;Hold You Tight|1998;Fucking Åmål|1998;Aimée & Jaguar|1999;Lola und Bilidikid|1998;Trick|1999;Water Drops on Burning Rocks|2000;Hedwig and the Angry Inch|2001;The Iron Ladies|2000;Walking on Water|2002;Wild Side|2004;D.E.B.S.|2004;A Year Without Love|2005;The Blossoming of Maximo Oliveros|2005;Transamerica|2005;Spider Lilies|2007;The Kids Are All Right|2010;Tomboy|2011;Absent|2011;Keep the Lights On|2012;In the Name of|2013;The Way He Looks|2014;Stories of Our Lives|2014;Nasty Baby|2015;Tomcat|2016;Théo et Hugo dans le même bateau|2016;A Fantastic Woman|2017;God's Own Country|2017;Close-Knit|2017;Hard Paint|2018;The Heiresses|2018;Brief Story from the Green Planet|2019;No Hard Feelings|2020;Three Tidy Tigers Tied a Tie Tighter|2022;All the Colours of the World Are Between Black and White|2023;All Shall Be Well|2024;Lesbian Space Princess|2025;Carol|2015;Portrait of a Lady on Fire|2019;120 battements par minute|2017;Pride|2014;Moonlight|2016;Call Me by Your Name|2017;Brokeback Mountain|2005;Weekend|2011;Beautiful Thing|1996;My Beautiful Laundrette|1985;Maurice|1987;Girl|2018;Laurence Anyways|2012;Stranger by the Lake|2013;Blue Is the Warmest Colour|2013;Happy Together|1997;But I'm a Cheerleader|1999;Bound|1996;Boys Don't Cry|1999;Cachorro|2004;La mala educación|2004;Todo sobre mi madre|1999;Carmen y Lola|2018;Elisa y Marcela|2019;Paris Is Burning|1990;The Celluloid Closet|1995;Kaboom|2010;Skoonheid|2011;Closet Monster|2015`)},
+ yaya:{n:'Tarde en casa de la yaya',type:'tv',list:L(`Los ricos también lloran|1979;Cristal|1985;Rosa salvaje|1987;Topacio|1985;Kassandra|1992;Esmeralda|1997;Marimar|1994;María Mercedes|1992;La usurpadora|1998;Pasión de Gavilanes|2003;Yo soy Betty, la fea|1999;Café con aroma de mujer|1994;Rubí|2004;Rebelde|2004;Cuna de lobos|1986;El privilegio de amar|1998;Manuela|1991;Cara sucia|1992;Muchachitas|1991;Carrusel|1989;Quinceañera|1987;Simplemente María|1989;La fea más bella|2006;Gata salvaje|1992;Teresa|1989`)},
+ x3:{n:'3XL · juvenil en català',type:'tv',list:L(`Dragon Ball|1986;Dragon Ball Z|1989;Dragon Ball GT|1996;Dragon Ball Z Kai|2009;Skins|2007;The League of Gentlemen|1999;Plats bruts|1999;Polseres vermelles|2011;Merlí|2015`)},
+ s3:{n:'El Súper3',type:'tv',list:L(`Dragon Ball|1986;Dragon Ball Z|1989;Dr. Slump|1997;Doraemon|1979;Shin-chan|1992;Las tres mellizas|1997;Kinnikuman|1983;Pingu|1990;Teletubbies|1997;Sailor Moon|1992;The Penguins of Madagascar|2008;Totally Spies!|2001;Maya the Bee|2012;Shaun the Sheep|2007;Wild Kratts|2011;Timmy Time|2009;House of Anubis|2011;Lucky Luke|1983;Geronimo Stilton|2009;Zoom, the White Dolphin|2014;The Mysterious Cities of Gold|1982;LazyTown|2004;Blue Dragon|2007;Raa Raa the Noisy Lion|2011`)}
+};
+let ctxK=null,ctxOnly=false,gd=[];
+const rc=ld('qvh-res',{});
+async function resolve(type,[ti,y]){
+  const k=type+'|'+ti+'|'+y;if(k in rc)return rc[k];
+  let r=null;
+  try{const d=await api('/search/'+type,{query:ti,language:LG()});
+    const yr=x=>+((x.release_date||x.first_air_date||'').slice(0,4));
+    r=d.results.find(x=>Math.abs(yr(x)-y)<=1)||d.results.find(x=>(x.title||x.name||'').toLowerCase()===ti.toLowerCase())||null;
+  }catch(e){return null}
+  rc[k]=r?{id:r.id,title:r.title,name:r.name,poster_path:r.poster_path,release_date:r.release_date,first_air_date:r.first_air_date,vote_average:r.vote_average,overview:r.overview}:null;
+  sv('qvh-res',rc);return rc[k];
+}
+async function avail(type,it){try{const r=await api(`/${type}/${it.id}/watch/providers`);const e=r.results&&r.results[REG];if(!e)return false;const have=new Set([...(e.flatrate||[]),...(e.free||[]),...(e.ads||[])].map(p=>p.provider_id));return[...selP].some(k=>(ids[k]||[]).some(i=>have.has(i)))}catch(x){return false}}
+async function pickCtx(type,ex){
+  const c=CTX[ctxK];if(c.type!==type)return null;
+  let tries=0;
+  for(const i of shuf(c.list.map((_,i)=>i))){
+    if(tries++>(ctxOnly?30:15))break;
+    const it=await resolve(type,c.list[i]);if(!it)continue;
+    const key=type+'-'+it.id;if(hid[key]||seen[key]||ex.has(key))continue;
+    if(ctxOnly&&!(await avail(type,it)))continue;
+    return{it,src:'ctx'};
+  }
+  return null;
+}
+const kinds=()=>ctxK?[CTX[ctxK].type]:[...selK];
+async function startGuide(){
+  const o=$('o-vote');
+  if(!ctxK){o.innerHTML='<p class="msg">Elige primero un contexto.</p>';return}
+  $('o-tv').innerHTML='';$('o-movie').innerHTML='';vt=null;o.innerHTML='<p class="msg">Preparando programación…</p>';
+  const c=CTX[ctxK],type=c.type,times=type==='tv'?['20:00','20:30','21:00','21:30']:['18:00','20:30','23:00'],rows=[],ex=new Set();let sub='PROGRAMACIÓN DE HOY',entries=null;
+  try{
+    if(c.lineups){const l=rnd(c.lineups);sub='TEMPORADA '+l[0];entries=l[1]}
+    for(let i=0;i<times.length;i++){
+      let r=null;
+      if(entries){if(!entries[i])break;const it=await resolve(type,entries[i]);if(it)r={it,src:'ctx'}}
+      else r=await pickCtx(type,ex);
+      if(!r){if(entries)continue;break}
+      ex.add(type+'-'+r.it.id);let ep='';
+      if(type==='tv'){try{const d=await api('/tv/'+r.it.id,{language:LG()});const l=[];for(const s of d.seasons||[])if(s.season_number>0)for(let e=1;e<=s.episode_count;e++)l.push([s.season_number,e]);if(l.length){const x=rnd(l);ep='T'+x[0]+'·E'+x[1]}}catch(e){}}
+      rows.push({tm:times[i],type,it:r.it,src:r.src,ep});
+    }
+  }catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>';return}
+  if(!rows.length){o.innerHTML=p404(c.n);return}
+  gd=rows;
+  o.innerHTML='<div class="ep">P100 · '+esc(c.n.toUpperCase())+'<small>'+sub+'</small></div>'+rows.map((x,i)=>`<div class="vc"><span class="vn" style="min-width:5ch;text-align:left">${x.tm}</span>${x.it.poster_path?`<img src="https://image.tmdb.org/t/p/w154${x.it.poster_path}" alt="">`:''}<div class="vt"><b>${esc(x.it.title||x.it.name)}</b><br><small>${(x.it.release_date||x.it.first_air_date||'').slice(0,4)}${x.ep?' · '+x.ep:''}</small></div><button class="sec" data-g="${i}">Ver ficha</button></div>`).join('')+'<div class="row"><button class="sec" data-a="gnew">🔁 Otra programación</button></div>';
+  goTo(o);
+}
+const goTo=el=>{try{el.scrollIntoView({behavior:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth',block:'start'})}catch(e){}};
 const p404=l=>`<div class="ep">P404<small>PÁGINA NO ENCONTRADA</small></div><p class="msg">${l}: nada con estos filtros. Prueba con más plataformas, otra categoría u otro tramo de años.</p>`;
 const SITE='https://mikytak.github.io/teletexto/';
 async function catParams(c,t){
@@ -222,8 +373,8 @@ async function query(pl,type,cp){
   const net=pl==='dropout'&&dropNet;
   if(net&&type!=='tv')return null;
   for(const rg of(pl==='dropout'&&dropFallback?['US','GB','CA']:[REG])){
-    const base=net?{with_networks:dropNet,sort_by:'popularity.desc',language:'es-ES',...cp}
-      :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:FREE.includes(pl)?'free|ads|flatrate':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:'es-ES',...cp};
+    const base=net?{with_networks:dropNet,sort_by:'popularity.desc',language:LG(),...cp}
+      :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:FREE.includes(pl)?'free|ads|flatrate':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:LG(),...cp};
     if(type==='movie'&&durOK())base['with_runtime.lte']=$('durr').value;
     const y=yrs();if(y){const yk=type==='movie'?'primary_release_date':'first_air_date';if(y[0])base[yk+'.gte']=y[0]+'-01-01';if(y[1])base[yk+'.lte']=y[1]+'-12-31'}
     const r=await api('/discover/'+type,{...base,page:1});
@@ -232,6 +383,7 @@ async function query(pl,type,cp){
   return null;
 }
 async function pick(type,ex=new Set()){
+  if(ctxK)return pickCtx(type,ex);
   for(const c of selC.size?shuf([...selC]):[null]){
     const cp=c?await catParams(c,type):{};
     if(cp===null)continue;
@@ -247,7 +399,7 @@ async function pick(type,ex=new Set()){
         if(fresh.length)return{it:rnd(fresh),src:pl};
       }
     }
-    if(dnd){const s=await api('/search/tv',{query:'Dimension 20',language:'es-ES'});const l=s.results.filter(x=>/dimension 20|adventuring party/i.test(x.name)&&!hid['tv-'+x.id]);if(l.length)return{it:rnd(l),src:'dropout'}}
+    if(dnd){const s=await api('/search/tv',{query:'Dimension 20',language:LG()});const l=s.results.filter(x=>/dimension 20|adventuring party/i.test(x.name)&&!hid['tv-'+x.id]);if(l.length)return{it:rnd(l),src:'dropout'}}
   }
   return null;
 }
@@ -255,15 +407,15 @@ async function draw(type){
   const o=$('o-'+type);o.innerHTML='<p class="msg">Sorteando '+(type==='tv'?'serie':'peli')+'…</p>';
   try{
     const r=await pick(type);
-    if(!r){o.innerHTML=p404(type==='tv'?'Series':'Pelis');return}
+    if(!r){o.innerHTML=p404(type==='tv'?'Series':'Pelis');goTo($('out'));return}
     await show(type,r.it,r.src);
   }catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 async function surprise(){
   $('o-vote').innerHTML='';vt=null;
-  if(!selP.size||!selK.size){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';$('o-movie').innerHTML='';return}
-  for(const t of['tv','movie'])if(!selK.has(t))$('o-'+t).innerHTML='';
-  await Promise.all([...selK].map(draw));
+  if(!ctxK&&(!selP.size||!selK.size)){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';$('o-movie').innerHTML='';return}
+  const ks=kinds();for(const t of['tv','movie'])if(!ks.includes(t))$('o-'+t).innerHTML='';
+  await Promise.all(ks.map(draw));
 }
 $('surprise').onclick=surprise;
 
@@ -273,8 +425,8 @@ async function show(type,it,src){
   let ep=null,note='';
   const [prov,det,vid]=await Promise.all([
     api(`/${type}/${it.id}/watch/providers`).catch(()=>null),
-    type==='tv'?api('/tv/'+it.id,{language:'es-ES'}).catch(()=>null):api('/movie/'+it.id,{language:'es-ES'}).catch(()=>null),
-    api(`/${type}/${it.id}/videos`,{language:'es-ES',include_video_language:'es,en,null'}).catch(()=>null)]);
+    type==='tv'?api('/tv/'+it.id,{language:LG()}).catch(()=>null):api('/movie/'+it.id,{language:LG()}).catch(()=>null),
+    api(`/${type}/${it.id}/videos`,{language:LG(),include_video_language:lang+',en,null'}).catch(()=>null)]);
   const es=prov&&prov.results&&prov.results[REG];
   const names=es?[...new Set([...(es.flatrate||[]),...(es.free||[]),...(es.ads||[])].map(p=>p.provider_name))]:[];
   if(src==='dropout'&&dropNet&&!names.length)names.push('Dropout (según su canal en TMDB)');
@@ -282,7 +434,7 @@ async function show(type,it,src){
   if(type==='tv'&&det){
     const l=[];
     for(const s of det.seasons||[])if(s.season_number>0)for(let e=1;e<=s.episode_count;e++)if(!seen[`${it.id}-${s.season_number}-${e}`])l.push([s.season_number,e]);
-    if(l.length){ep=rnd(l);try{const sn=await api(`/tv/${it.id}/season/${ep[0]}`,{language:'es-ES'});const x=(sn.episodes||[]).find(z=>z.episode_number===ep[1]);if(x)ep.push(x.name,x.overview)}catch(e){}}
+    if(l.length){ep=rnd(l);try{const sn=await api(`/tv/${it.id}/season/${ep[0]}`,{language:LG()});const x=(sn.episodes||[]).find(z=>z.episode_number===ep[1]);if(x)ep.push(x.name,x.overview)}catch(e){}}
     else note='¡Te lo has visto todo! Borra los vistos para empezar de nuevo.';
   }
   const year=(it.release_date||it.first_air_date||'').slice(0,4);
@@ -296,22 +448,23 @@ async function show(type,it,src){
     ${ep?`<div class="ep">T${ep[0]} · E${ep[1]}${ep[2]?`<small>${esc(ep[2])}</small>`:''}</div>${ep[3]?`<p class="sub">${esc(ep[3])}</p>`:''}`:`<p class="sub">${esc(it.overview||'')}</p>`}
     ${note?`<p class="msg">${note}</p>`:''}
     <div class="row">${type==='tv'?`<button class="sec" data-a="again" data-t="${type}">🔁 Otro episodio</button><button class="sec" data-a="epseen" data-t="${type}">✅ Episodio visto</button>`:''}<button class="sec" data-a="sawit" data-t="${type}">👁 Ya la vi</button><button class="sec" data-a="skip" data-t="${type}">🚫 No me interesa</button><button class="sec" data-a="next" data-t="${type}">🎲 Otra ${type==='tv'?'serie':'peli'}</button><button class="sec" data-a="where" data-t="${type}">📍 Dónde verlo</button>${tr?`<button class="sec" data-a="trailer" data-t="${type}">▶ Tráiler</button>`:''}<button class="sec" data-a="share" data-t="${type}">📤 Compartir</button></div></div></div>`;
-  Object.assign(last[type],{ep,where,trailer:tr?'https://www.youtube.com/watch?v='+tr.key:'',share:'📺 Esta noche: '+title+(year?' ('+year+')':'')+(ep?' — T'+ep[0]+'·E'+ep[1]+(ep[2]?' «'+ep[2]+'»':''):'')+(plat?' · '+plat:'')});
+  goTo($('out'));
+  Object.assign(last[type],{ep,where,trailer:tr?'https://www.youtube.com/watch?v='+tr.key:'',share:tl('📺 Esta noche:')+' '+title+(year?' ('+year+')':'')+(ep?' — T'+ep[0]+'·E'+ep[1]+(ep[2]?' «'+ep[2]+'»':''):'')+(plat?' · '+plat:'')});
 }
 let vt=null;
 async function shareIt(l,b){
   try{if(navigator.share){await navigator.share({text:l.share,url:SITE});return}}catch(e){if(e&&e.name==='AbortError')return}
-  try{await navigator.clipboard.writeText(l.share+'\n'+SITE);const o=b.textContent;b.textContent='¡Copiado!';setTimeout(()=>b.textContent=o,1500)}catch(e){prompt('Copia y pega:',l.share+'\n'+SITE)}
+  try{await navigator.clipboard.writeText(l.share+'\n'+SITE);const o=b.textContent;b.textContent=tl('¡Copiado!');setTimeout(()=>b.textContent=o,1500)}catch(e){prompt(tl('Copia y pega:'),l.share+'\n'+SITE)}
 }
 async function startVote(){
-  if(!selP.size||!selK.size){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';return}
+  if(!ctxK&&(!selP.size||!selK.size)){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';return}
   $('o-tv').innerHTML='';$('o-movie').innerHTML='';
   const o=$('o-vote');o.innerHTML='<p class="msg">Sorteando opciones…</p>';
-  const per=selK.size===2?2:4,c=[],ex=new Set();
-  try{for(const k of selK){let g=0;for(let i=0;i<8&&g<per;i++){const r=await pick(k,ex);if(!r)break;const key=k+'-'+r.it.id;if(ex.has(key))continue;ex.add(key);c.push({type:k,it:r.it,src:r.src});g++}}}
+  const ks=kinds(),per=ks.length===2?2:4,c=[],ex=new Set();
+  try{for(const k of ks){let g=0;for(let i=0;i<8&&g<per;i++){const r=await pick(k,ex);if(!r)break;const key=k+'-'+r.it.id;if(ex.has(key))continue;ex.add(key);c.push({type:k,it:r.it,src:r.src});g++}}}
   catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>';return}
   if(c.length<2){o.innerHTML=p404('Votación');return}
-  vt={c,v:c.map(()=>0),n:+$('nv').value,tot:0,done:false};renderVote();
+  vt={c,v:c.map(()=>0),n:+$('nv').value,tot:0,done:false};renderVote();goTo($('o-vote'));
 }
 function renderVote(){
   $('o-vote').innerHTML='<div class="ep">VOTACIÓN<small>Pasaos el móvil: cada persona toca su opción.</small></div>'+vt.c.map((x,i)=>{const it=x.it,y=(it.release_date||it.first_air_date||'').slice(0,4);return `<div class="vc">${it.poster_path?`<img src="https://image.tmdb.org/t/p/w154${it.poster_path}" alt="">`:''}<div class="vt"><b>${esc(it.title||it.name)}</b><br><small>${x.type==='tv'?'Serie':'Peli'}${y?' · '+y:''}</small></div><span class="vn">${vt.v[i]}</span><button class="sec" data-v="${i}" ${vt.done?'disabled':''}>+1</button></div>`}).join('')+`<p class="msg">${vt.done?'':'Votos: '+vt.tot+'/'+vt.n}</p><div class="row"><button class="sec" data-a="vreset">↺ Reiniciar votos</button><button class="sec" data-a="vnew">🗳 Nueva votación</button></div><div id="vwin"></div>`;
@@ -325,12 +478,15 @@ function endVote(){
 $('vote').onclick=startVote;
 function updLists(){$('lc').textContent=Object.keys(hid).length+' descartados · '+Object.keys(seen).filter(k=>/^\d+-\d+-\d+$/.test(k)).length+' episodios vistos'}
 $('out').onclick=e=>{
+  const g=e.target.closest('[data-g]');
+  if(g){const x=gd[+g.dataset.g];$('o-tv').innerHTML='';$('o-movie').innerHTML='';show(x.type,x.it,x.src);return}
   const v=e.target.closest('[data-v]');
   if(v){if(vt&&!vt.done){vt.v[+v.dataset.v]++;vt.tot++;vt.tot>=vt.n?endVote():renderVote()}return}
   const b=e.target.closest('[data-a]');if(!b)return;
   const a=b.dataset.a;
   if(a==='vreset'){if(!vt)return;vt.v.fill(0);vt.tot=0;vt.done=false;$('o-tv').innerHTML='';$('o-movie').innerHTML='';renderVote();return}
   if(a==='vnew'){startVote();return}
+  if(a==='gnew'){startGuide();return}
   const t=b.dataset.t,l=last[t];if(!l)return;const{it,ep,src}=l,k=t+'-'+it.id;
   if(a==='again')show(t,it,src);
   else if(a==='next')draw(t);
@@ -343,14 +499,14 @@ $('out').onclick=e=>{
 async function search(){
   const q=$('q').value.trim();if(!q)return;
   try{
-    const r=await api('/search/tv',{query:q,language:'es-ES'});
+    const r=await api('/search/tv',{query:q,language:LG()});
     $('res').innerHTML=r.results.slice(0,6).map((x,i)=>`<button data-i="${i}">${esc(x.name)} <small>${(x.first_air_date||'').slice(0,4)}</small></button>`).join('')||'<p class="msg">Sin resultados.</p>';
     $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';$('o-movie').innerHTML='';$('o-vote').innerHTML='';vt=null;last.movie=null;show('tv',r.results[+b.dataset.i])};
   }catch(e){$('res').innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 $('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter')search()};
 $('clr').onclick=()=>{seen={};sv('qvh-seen',seen);updLists()};$('clrh').onclick=()=>{hid={};sv('qvh-hid',hid);updLists()};
-const tick=()=>{const d=new Date();$('clk').textContent=d.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase().replace(/\./g,'')+' '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};tick();setInterval(tick,1000);
+const tick=()=>{const d=new Date();$('clk').textContent=d.toLocaleDateString(LG(),{weekday:'short',day:'2-digit',month:'short'}).toUpperCase().replace(/\./g,'')+' '+d.toLocaleTimeString(LG(),{hour:'2-digit',minute:'2-digit',second:'2-digit'})};tick();setInterval(tick,1000);
 $('fr').onclick=()=>$('surprise').click();
 $('fg').onclick=()=>{const b=document.querySelector('[data-a="again"]')||document.querySelector('[data-a="next"]');if(b)b.click()};
 $('fy').onclick=()=>{const b=(document.querySelector('[data-a="epseen"]')||document.querySelector('[data-a="sawit"]'));if(b)b.click()};
@@ -360,19 +516,26 @@ const PH=['¡RESPONDA OTRA VEZ!','COMODÍN DEL PÚBLICO','EL ROSCO FINAL','PREGU
 const AURA=['+1000 AURA','AURA INFINITA','67 = +67 AURA'];
 let pn=Math.random()<1/15?67:1+Math.floor(Math.random()*899);
 $('pg').textContent='P'+String(pn).padStart(3,'0');
-$('ph').textContent=pn===67?AURA[Math.floor(Math.random()*AURA.length)]:PH[Math.floor(Math.random()*PH.length)];
-$('tag').textContent=TAGS[Math.floor(Math.random()*TAGS.length)];
+const phIdx=Math.random(),tgIdx=Math.random();
+function headline(){const arr=pn===67?AURA:(lang==='es'?PH:PHL[lang]);$('ph').textContent=arr[Math.floor(phIdx*arr.length)];const tg=lang==='es'?TAGS:TAGL[lang];$('tag').textContent=tg[Math.floor(tgIdx*tg.length)]}
+function setLang(l){lang=l;sv('qvh-lang',l);document.documentElement.lang=l;document.querySelectorAll('#langs [data-l]').forEach(b=>b.classList.toggle('on',b.dataset.l===l));retr();headline();tick()}
+$('langs').onclick=e=>{const b=e.target.closest('[data-l]');if(b)setLang(b.dataset.l)};
+new MutationObserver(ms=>{for(const m of ms){if(m.type==='childList')m.addedNodes.forEach(walk);else if(m.type==='characterData')doText(m.target);else if(m.type==='attributes')doEl(m.target)}}).observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:AT});
 const CT={ES:'España',MX:'México',AR:'Argentina',CO:'Colombia',CL:'Chile',PE:'Perú',UY:'Uruguay',US:'EE. UU.',PT:'Portugal',FR:'Francia',IT:'Italia',DE:'Alemania',GB:'Reino Unido'};
 let REG=ld('qvh-reg','ES'),keepSel=true;if(!CT[REG])REG='ES';
 $('reg').innerHTML=Object.entries(CT).map(([k,n])=>`<option value="${k}"${k===REG?' selected':''}>${n}</option>`).join('');
 $('ctry').textContent=CT[REG];
 $('reg').onchange=()=>{REG=$('reg').value;sv('qvh-reg',REG);$('ctry').textContent=CT[REG];keepSel=false;init()};
-$('yr').oninput=()=>{yrs();sp()};$('yrs').onclick=e=>{const b=e.target.closest('[data-y]');if(!b)return;$('yr').value=b.dataset.y;yrs();sp()};
+$('yr').oninput=()=>{yrs();sp()};
 updLists();
+$('ctxs').onclick=e=>{const b=e.target.closest('[data-x]');if(!b)return;ctxK=ctxK===b.dataset.x?null:b.dataset.x;chips()};
+$('ctxOnly').onclick=()=>{ctxOnly=!ctxOnly;chips()};
+$('guide').onclick=startGuide;
 const pf=ld('qvh-prefs',null);
 if(pf){if(pf.y)$('yr').value=pf.y;if(pf.k&&pf.k.length)selK=new Set(pf.k);if(pf.c)selC=new Set(pf.c.filter(x=>C[x]));if(pf.d){$('durr').value=pf.d;const v=+pf.d;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'}}
 const sp=()=>sv('qvh-prefs',{p:Object.keys(ids).length?[...selP]:(pf&&pf.p)||[],k:[...selK],c:[...selC],d:$('durr').value,y:$('yr').value});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+setLang(lang);
 chips();init();
 </script>
 </body>

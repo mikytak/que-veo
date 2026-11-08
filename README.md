@@ -7,6 +7,10 @@ Filtros: plataforma, tipo (series / pelis), «me apetece…» (comedia, romance,
 
 - Botones para ver dónde está cada título, su tráiler y compartir el resultado; «Ya la vi» y «No me interesa» con lista que se puede borrar.
 - Filtro por años (por ejemplo 1955-1998) y modo votación para elegir en grupo.
+- «Programación»: contextos hechos con listas curadas (TGIF con alineaciones reales de 1989-91, tele española 2010s, cineclub queer a partir de los premios Teddy y otros clásicos, el Súper3, 3XL, telenovelas, dibujos 90/2000…) y una parrilla de la noche con horarios.
+- Al cargar un resultado, la página baja sola hasta él.
+- Disponible en castellano, catalán e inglés (botones ES · CA · EN).
+- La clave de TMDB no está en el código: las peticiones pasan por un Worker de Cloudflare.
 - Recuerda tus plataformas y categorías en tu navegador.
 - Se puede instalar en el móvil como app (añadir a pantalla de inicio).
 - No guarda datos de nadie.
