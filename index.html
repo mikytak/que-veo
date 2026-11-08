@@ -124,8 +124,8 @@ const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 // --- Ajustes para publicar ---
-const PROXY='';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
-const EMBED_KEY='2c6005f592032977700dd12ba5929be7';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
+const PROXY='https://teletexto-api.mikytak.workers.dev';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
+const EMBED_KEY='';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
 let KEY=ld('qvh-key','')||EMBED_KEY,seen=ld('qvh-seen',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
 
 async function api(path,params={}){
