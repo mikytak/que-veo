@@ -70,6 +70,11 @@ footer{margin-top:34px;font-size:.85rem;color:#aaa}
 input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margin-top:6px}
 .top{flex-wrap:wrap}
 select{font:inherit;color:var(--y);background:#000;border:2px solid #fff;padding:6px 10px;width:100%}
+.vc{display:flex;gap:10px;align-items:center;border:2px solid #fff;padding:6px;margin-top:8px}
+.vc img{width:46px}
+.vc .vt{flex:1}
+.vc .vn{min-width:2ch;text-align:right;color:#ff0}
+input.bad{border-color:#f00}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
@@ -93,17 +98,22 @@ select{font:inherit;color:var(--y);background:#000;border:2px solid #fff;padding
 <h2>Tipo</h2>
 <div class="chips" id="kinds"></div>
 <div id="dur" hidden><h2>Duración</h2><div><span class="sub">Peli de <b id="durv">sin límite</b></span><input type="range" id="durr" min="60" max="240" step="10" value="240"></div></div>
+<h2>Años</h2>
+<input id="yr" placeholder="1955-1998" inputmode="numeric" autocomplete="off">
+<div class="chips" id="yrs" style="margin-top:8px"><button class="chip" data-y="-1979">Clásicos</button><button class="chip" data-y="1980-1989">80s</button><button class="chip" data-y="1990-1999">90s</button><button class="chip" data-y="2000-2009">2000s</button><button class="chip" data-y="2010-2019">2010s</button><button class="chip" data-y="2020-">Recientes</button><button class="chip" data-y="">✖</button></div>
+<p class="sub" style="margin:6px 0 0">Escribe un tramo (1955-1998), un año o «1990-» para «desde 1990».</p>
 <h2>Me apetece…</h2>
 <div class="chips" id="cats"></div>
 <p class="sub" style="margin:6px 0 0">Sin marcar = cualquier cosa. Si marcas varias, saco una al azar.</p>
 <button class="main" id="surprise" disabled>▶ ¡Pulsa y mira!</button>
+<div class="row"><button class="sec" id="vote" disabled>🗳 Noche en grupo</button><label class="sub">¿Cuántos votáis? <select id="nv" style="width:auto"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label></div>
 
 <h2>O busca una serie</h2>
 <div class="row" style="margin-top:0"><input id="q" placeholder="Nombre de la serie"><button class="sec" id="go">Buscar</button></div>
 <div class="res" id="res"></div>
 
-<div id="out" aria-live="polite"><div id="o-tv"></div><div id="o-movie"></div></div>
-<details><summary>Episodios vistos</summary><div class="row"><button class="sec" id="clr">Borrar vistos</button></div></details>
+<div id="out" aria-live="polite"><div id="o-tv"></div><div id="o-movie"></div><div id="o-vote"></div></div>
+<details><summary>Mis listas</summary><p class="sub" id="lc"></p><div class="row"><button class="sec" id="clr">Borrar episodios vistos</button><button class="sec" id="clrh">Borrar descartados</button></div></details>
 
 <footer>
 <p><a href="https://www.themoviedb.org" target="_blank" rel="noopener"><img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDB" height="14" onerror="this.replaceWith('TMDB')"></a></p>
@@ -124,9 +134,9 @@ const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 // --- Ajustes para publicar ---
-const PROXY='https://teletexto-api.mikytak.workers.dev';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
-const EMBED_KEY='';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
-let KEY=ld('qvh-key','')||EMBED_KEY,seen=ld('qvh-seen',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
+const PROXY='';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
+const EMBED_KEY='2c6005f592032977700dd12ba5929be7';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
+let KEY=ld('qvh-key','')||EMBED_KEY,seen=ld('qvh-seen',{}),hid=ld('qvh-hid',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
 
 async function api(path,params={}){
   const u=new URL((PROXY||'https://api.themoviedb.org')+'/3'+path);
@@ -192,12 +202,15 @@ async function init(){
     {const all=Object.keys(P).filter(k=>ids[k].length),sv0=keepSel&&pf&&pf.p?pf.p.filter(k=>all.includes(k)):[];selP=new Set(sv0.length?sv0:all);keepSel=false}
     const miss=Object.keys(P).filter(k=>!ids[k].length).map(k=>P[k][0]);
     $('cfgMsg').textContent='Listo.'+(miss.length?` No he encontrado en ${CT[REG]}: ${miss.join(', ')}.`:'')+(dropFallback?' Dropout no consta en '+CT[REG]+' en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).':'')+(dropNet?' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en España).':'');
-    $('cfg').open=false;$('surprise').disabled=false;chips();
+    $('cfg').open=false;$('surprise').disabled=false;$('vote').disabled=false;chips();
   }catch(e){$('cfgMsg').textContent='No he podido conectar con TMDB: revisa la clave ('+e.message+').';}
 }
 $('saveKey').onclick=()=>{KEY=$('key').value.trim();sv('qvh-key',KEY);init()};
 $('key').value=KEY;
 
+function yrs(){const v=$('yr').value.trim();$('yr').classList.remove('bad');if(!v)return null;let a,b,m=v.match(/^(\d{4})?\s*[-–—]\s*(\d{4})?$/);if(m&&(m[1]||m[2])){a=m[1];b=m[2]}else if(/^\d{4}$/.test(v)){a=b=v}else{$('yr').classList.add('bad');return null}if(a&&b&&+a>+b){[a,b]=[b,a]}return[a||null,b||null]}
+const p404=l=>`<div class="ep">P404<small>PÁGINA NO ENCONTRADA</small></div><p class="msg">${l}: nada con estos filtros. Prueba con más plataformas, otra categoría u otro tramo de años.</p>`;
+const SITE='https://mikytak.github.io/teletexto/';
 async function catParams(c,t){
   const d=C[c];
   if(d.dnd){if(t!=='tv')return null;const ks=(await Promise.all(['dungeons and dragons','tabletop role-playing game','role playing game'].map(kw))).filter(Boolean);return ks.length?{with_keywords:ks.join('|')}:{__fb:1}}
@@ -212,12 +225,13 @@ async function query(pl,type,cp){
     const base=net?{with_networks:dropNet,sort_by:'popularity.desc',language:'es-ES',...cp}
       :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:FREE.includes(pl)?'free|ads|flatrate':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:'es-ES',...cp};
     if(type==='movie'&&durOK())base['with_runtime.lte']=$('durr').value;
+    const y=yrs();if(y){const yk=type==='movie'?'primary_release_date':'first_air_date';if(y[0])base[yk+'.gte']=y[0]+'-01-01';if(y[1])base[yk+'.lte']=y[1]+'-12-31'}
     const r=await api('/discover/'+type,{...base,page:1});
     if(r.results.length)return{f:r,base};
   }
   return null;
 }
-async function pick(type){
+async function pick(type,ex=new Set()){
   for(const c of selC.size?shuf([...selC]):[null]){
     const cp=c?await catParams(c,type):{};
     if(cp===null)continue;
@@ -225,13 +239,15 @@ async function pick(type){
     if(!(dnd&&cp.__fb))for(const pl of dnd?['dropout']:shuf(selP)){
       if(!(ids[pl]||[]).length)continue;
       const q=await query(pl,type,cp);if(!q)continue;
-      const pg=1+Math.floor(Math.random()*Math.min(q.f.total_pages,500));
-      const d=pg===1?q.f:await api('/discover/'+type,{...q.base,page:pg});
-      const res=d.results.length?d.results:q.f.results;
-      const fresh=res.filter(x=>!seen[type+'-'+x.id]);
-      return{it:rnd(fresh.length?fresh:res),src:pl};
+      const tp=Math.min(q.f.total_pages,500);
+      for(let a=0;a<3;a++){
+        const pg=1+Math.floor(Math.random()*tp);
+        const d=pg===1?q.f:await api('/discover/'+type,{...q.base,page:pg});
+        const fresh=d.results.filter(x=>!hid[type+'-'+x.id]&&!seen[type+'-'+x.id]&&!ex.has(type+'-'+x.id));
+        if(fresh.length)return{it:rnd(fresh),src:pl};
+      }
     }
-    if(dnd){const s=await api('/search/tv',{query:'Dimension 20',language:'es-ES'});const l=s.results.filter(x=>/dimension 20|adventuring party/i.test(x.name));if(l.length)return{it:rnd(l),src:'dropout'}}
+    if(dnd){const s=await api('/search/tv',{query:'Dimension 20',language:'es-ES'});const l=s.results.filter(x=>/dimension 20|adventuring party/i.test(x.name)&&!hid['tv-'+x.id]);if(l.length)return{it:rnd(l),src:'dropout'}}
   }
   return null;
 }
@@ -239,11 +255,12 @@ async function draw(type){
   const o=$('o-'+type);o.innerHTML='<p class="msg">Sorteando '+(type==='tv'?'serie':'peli')+'…</p>';
   try{
     const r=await pick(type);
-    if(!r){o.innerHTML='<p class="msg">'+(type==='tv'?'Series':'Pelis')+': nada con estos filtros. Prueba con más plataformas u otra categoría.</p>';return}
+    if(!r){o.innerHTML=p404(type==='tv'?'Series':'Pelis');return}
     await show(type,r.it,r.src);
   }catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 async function surprise(){
+  $('o-vote').innerHTML='';vt=null;
   if(!selP.size||!selK.size){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';$('o-movie').innerHTML='';return}
   for(const t of['tv','movie'])if(!selK.has(t))$('o-'+t).innerHTML='';
   await Promise.all([...selK].map(draw));
@@ -254,9 +271,10 @@ async function show(type,it,src){
   last[type]={it,src};
   const title=it.title||it.name;
   let ep=null,note='';
-  const [prov,det]=await Promise.all([
+  const [prov,det,vid]=await Promise.all([
     api(`/${type}/${it.id}/watch/providers`).catch(()=>null),
-    type==='tv'?api('/tv/'+it.id,{language:'es-ES'}).catch(()=>null):api('/movie/'+it.id,{language:'es-ES'}).catch(()=>null)]);
+    type==='tv'?api('/tv/'+it.id,{language:'es-ES'}).catch(()=>null):api('/movie/'+it.id,{language:'es-ES'}).catch(()=>null),
+    api(`/${type}/${it.id}/videos`,{language:'es-ES',include_video_language:'es,en,null'}).catch(()=>null)]);
   const es=prov&&prov.results&&prov.results[REG];
   const names=es?[...new Set([...(es.flatrate||[]),...(es.free||[]),...(es.ads||[])].map(p=>p.provider_name))]:[];
   if(src==='dropout'&&dropNet&&!names.length)names.push('Dropout (según su canal en TMDB)');
@@ -268,36 +286,74 @@ async function show(type,it,src){
     else note='¡Te lo has visto todo! Borra los vistos para empezar de nuevo.';
   }
   const year=(it.release_date||it.first_air_date||'').slice(0,4);
+  const vs=((vid&&vid.results)||[]).filter(v=>v.site==='YouTube'),tr=vs.find(v=>v.type==='Trailer'&&v.official)||vs.find(v=>v.type==='Trailer')||vs.find(v=>v.type==='Teaser');
+  const where=(es&&es.link)||`https://www.themoviedb.org/${type}/${it.id}/watch?locale=${REG}`;
+  const plat=names.find(n=>Object.values(P).some(v=>v[2].test(n)))||names[0]||'';
   const mins=type==='movie'&&det&&det.runtime?' · '+det.runtime+' min':'';
   $('o-'+type).innerHTML=`<div class="card">${it.poster_path?`<img src="https://image.tmdb.org/t/p/w342${it.poster_path}" alt="">`:''}<div class="b">
     <h3>${esc(title)}</h3><small>${type==='tv'?'Serie':'Peli'}${year?' · '+year:''}${mins}${it.vote_average?' · ★ '+it.vote_average.toFixed(1):''}</small>
     <p><small>${names.length?'En '+CT[REG]+': '+esc(names.join(', ')):'No aparece en streaming (suscripción) en '+CT[REG]+' ahora mismo.'}</small></p>
     ${ep?`<div class="ep">T${ep[0]} · E${ep[1]}${ep[2]?`<small>${esc(ep[2])}</small>`:''}</div>${ep[3]?`<p class="sub">${esc(ep[3])}</p>`:''}`:`<p class="sub">${esc(it.overview||'')}</p>`}
     ${note?`<p class="msg">${note}</p>`:''}
-    <div class="row">${type==='tv'?`<button class="sec" data-a="again" data-t="${type}">🔁 Otro episodio</button>`:''}<button class="sec" data-a="seen" data-t="${type}">✅ Visto</button><button class="sec" data-a="next" data-t="${type}">🎲 Otra ${type==='tv'?'serie':'peli'}</button></div></div></div>`;
-  last[type].ep=ep;
+    <div class="row">${type==='tv'?`<button class="sec" data-a="again" data-t="${type}">🔁 Otro episodio</button><button class="sec" data-a="epseen" data-t="${type}">✅ Episodio visto</button>`:''}<button class="sec" data-a="sawit" data-t="${type}">👁 Ya la vi</button><button class="sec" data-a="skip" data-t="${type}">🚫 No me interesa</button><button class="sec" data-a="next" data-t="${type}">🎲 Otra ${type==='tv'?'serie':'peli'}</button><button class="sec" data-a="where" data-t="${type}">📍 Dónde verlo</button>${tr?`<button class="sec" data-a="trailer" data-t="${type}">▶ Tráiler</button>`:''}<button class="sec" data-a="share" data-t="${type}">📤 Compartir</button></div></div></div>`;
+  Object.assign(last[type],{ep,where,trailer:tr?'https://www.youtube.com/watch?v='+tr.key:'',share:'📺 Esta noche: '+title+(year?' ('+year+')':'')+(ep?' — T'+ep[0]+'·E'+ep[1]+(ep[2]?' «'+ep[2]+'»':''):'')+(plat?' · '+plat:'')});
 }
+let vt=null;
+async function shareIt(l,b){
+  try{if(navigator.share){await navigator.share({text:l.share,url:SITE});return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{await navigator.clipboard.writeText(l.share+'\n'+SITE);const o=b.textContent;b.textContent='¡Copiado!';setTimeout(()=>b.textContent=o,1500)}catch(e){prompt('Copia y pega:',l.share+'\n'+SITE)}
+}
+async function startVote(){
+  if(!selP.size||!selK.size){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';return}
+  $('o-tv').innerHTML='';$('o-movie').innerHTML='';
+  const o=$('o-vote');o.innerHTML='<p class="msg">Sorteando opciones…</p>';
+  const per=selK.size===2?2:4,c=[],ex=new Set();
+  try{for(const k of selK){let g=0;for(let i=0;i<8&&g<per;i++){const r=await pick(k,ex);if(!r)break;const key=k+'-'+r.it.id;if(ex.has(key))continue;ex.add(key);c.push({type:k,it:r.it,src:r.src});g++}}}
+  catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>';return}
+  if(c.length<2){o.innerHTML=p404('Votación');return}
+  vt={c,v:c.map(()=>0),n:+$('nv').value,tot:0,done:false};renderVote();
+}
+function renderVote(){
+  $('o-vote').innerHTML='<div class="ep">VOTACIÓN<small>Pasaos el móvil: cada persona toca su opción.</small></div>'+vt.c.map((x,i)=>{const it=x.it,y=(it.release_date||it.first_air_date||'').slice(0,4);return `<div class="vc">${it.poster_path?`<img src="https://image.tmdb.org/t/p/w154${it.poster_path}" alt="">`:''}<div class="vt"><b>${esc(it.title||it.name)}</b><br><small>${x.type==='tv'?'Serie':'Peli'}${y?' · '+y:''}</small></div><span class="vn">${vt.v[i]}</span><button class="sec" data-v="${i}" ${vt.done?'disabled':''}>+1</button></div>`}).join('')+`<p class="msg">${vt.done?'':'Votos: '+vt.tot+'/'+vt.n}</p><div class="row"><button class="sec" data-a="vreset">↺ Reiniciar votos</button><button class="sec" data-a="vnew">🗳 Nueva votación</button></div><div id="vwin"></div>`;
+}
+function endVote(){
+  vt.done=true;const m=Math.max(...vt.v),w=vt.c.map((x,i)=>i).filter(i=>vt.v[i]===m),x=vt.c[rnd(w)];
+  renderVote();
+  $('vwin').innerHTML='<div class="ep">🏆 '+esc(x.it.title||x.it.name)+(w.length>1?'<small>Empate: decide el azar</small>':'')+'</div>';
+  show(x.type,x.it,x.src);
+}
+$('vote').onclick=startVote;
+function updLists(){$('lc').textContent=Object.keys(hid).length+' descartados · '+Object.keys(seen).filter(k=>/^\d+-\d+-\d+$/.test(k)).length+' episodios vistos'}
 $('out').onclick=e=>{
+  const v=e.target.closest('[data-v]');
+  if(v){if(vt&&!vt.done){vt.v[+v.dataset.v]++;vt.tot++;vt.tot>=vt.n?endVote():renderVote()}return}
   const b=e.target.closest('[data-a]');if(!b)return;
-  const t=b.dataset.t,l=last[t];if(!l)return;const{it,ep,src}=l,a=b.dataset.a;
+  const a=b.dataset.a;
+  if(a==='vreset'){if(!vt)return;vt.v.fill(0);vt.tot=0;vt.done=false;$('o-tv').innerHTML='';$('o-movie').innerHTML='';renderVote();return}
+  if(a==='vnew'){startVote();return}
+  const t=b.dataset.t,l=last[t];if(!l)return;const{it,ep,src}=l,k=t+'-'+it.id;
   if(a==='again')show(t,it,src);
   else if(a==='next')draw(t);
-  else if(a==='seen'){seen[ep?`${it.id}-${ep[0]}-${ep[1]}`:`${t}-${it.id}`]=1;sv('qvh-seen',seen);t==='tv'?show(t,it,src):draw(t)}
+  else if(a==='epseen'){if(ep){seen[`${it.id}-${ep[0]}-${ep[1]}`]=1;sv('qvh-seen',seen);updLists()}show(t,it,src)}
+  else if(a==='sawit'||a==='skip'){hid[k]=a;sv('qvh-hid',hid);updLists();draw(t)}
+  else if(a==='where')window.open(l.where,'_blank','noopener');
+  else if(a==='trailer')window.open(l.trailer,'_blank','noopener');
+  else if(a==='share')shareIt(l,b);
 };
 async function search(){
   const q=$('q').value.trim();if(!q)return;
   try{
     const r=await api('/search/tv',{query:q,language:'es-ES'});
     $('res').innerHTML=r.results.slice(0,6).map((x,i)=>`<button data-i="${i}">${esc(x.name)} <small>${(x.first_air_date||'').slice(0,4)}</small></button>`).join('')||'<p class="msg">Sin resultados.</p>';
-    $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';$('o-movie').innerHTML='';last.movie=null;show('tv',r.results[+b.dataset.i])};
+    $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';$('o-movie').innerHTML='';$('o-vote').innerHTML='';vt=null;last.movie=null;show('tv',r.results[+b.dataset.i])};
   }catch(e){$('res').innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 $('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter')search()};
-$('clr').onclick=()=>{seen={};sv('qvh-seen',seen)};
+$('clr').onclick=()=>{seen={};sv('qvh-seen',seen);updLists()};$('clrh').onclick=()=>{hid={};sv('qvh-hid',hid);updLists()};
 const tick=()=>{const d=new Date();$('clk').textContent=d.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase().replace(/\./g,'')+' '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};tick();setInterval(tick,1000);
 $('fr').onclick=()=>$('surprise').click();
 $('fg').onclick=()=>{const b=document.querySelector('[data-a="again"]')||document.querySelector('[data-a="next"]');if(b)b.click()};
-$('fy').onclick=()=>{const b=document.querySelector('[data-a="seen"]');if(b)b.click()};
+$('fy').onclick=()=>{const b=(document.querySelector('[data-a="epseen"]')||document.querySelector('[data-a="sawit"]'));if(b)b.click()};
 $('fc').onclick=()=>{$('q').focus();$('q').scrollIntoView({block:'center'})};
 const TAGS=['Sin scroll infinito: el azar decide por ti.','Página 888: el único canal sin anuncios de pizzas.','Deja de buscar. Empieza a ver.','Un episodio al azar, como los de antes: lo que echen.','Tu mando está de vacaciones. Pulsa el botón rojo.','Teletexto de verdad: cero pestañas, cero dudas.'];
 const PH=['¡RESPONDA OTRA VEZ!','COMODÍN DEL PÚBLICO','EL ROSCO FINAL','PREGUNTA DEL MILLÓN','CARTA DE AJUSTE','VOLVEMOS TRAS LA PUBLI','CINE DE BARRIO','SESIÓN DE TARDE','EL TIEMPO: SOFÁ Y MANTA','¡DALE AL BOTÓN ROJO!','SIN CORTES PUBLICITARIOS','TELEDIARIO 2.ª EDICIÓN','ESPECIAL SOBREMESA','¡ESTAMOS EN DIRECTO!'];
@@ -311,9 +367,11 @@ let REG=ld('qvh-reg','ES'),keepSel=true;if(!CT[REG])REG='ES';
 $('reg').innerHTML=Object.entries(CT).map(([k,n])=>`<option value="${k}"${k===REG?' selected':''}>${n}</option>`).join('');
 $('ctry').textContent=CT[REG];
 $('reg').onchange=()=>{REG=$('reg').value;sv('qvh-reg',REG);$('ctry').textContent=CT[REG];keepSel=false;init()};
+$('yr').oninput=()=>{yrs();sp()};$('yrs').onclick=e=>{const b=e.target.closest('[data-y]');if(!b)return;$('yr').value=b.dataset.y;yrs();sp()};
+updLists();
 const pf=ld('qvh-prefs',null);
-if(pf){if(pf.k&&pf.k.length)selK=new Set(pf.k);if(pf.c)selC=new Set(pf.c.filter(x=>C[x]));if(pf.d){$('durr').value=pf.d;const v=+pf.d;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'}}
-const sp=()=>sv('qvh-prefs',{p:Object.keys(ids).length?[...selP]:(pf&&pf.p)||[],k:[...selK],c:[...selC],d:$('durr').value});
+if(pf){if(pf.y)$('yr').value=pf.y;if(pf.k&&pf.k.length)selK=new Set(pf.k);if(pf.c)selC=new Set(pf.c.filter(x=>C[x]));if(pf.d){$('durr').value=pf.d;const v=+pf.d;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'}}
+const sp=()=>sv('qvh-prefs',{p:Object.keys(ids).length?[...selP]:(pf&&pf.p)||[],k:[...selK],c:[...selC],d:$('durr').value,y:$('yr').value});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 chips();init();
 </script>
