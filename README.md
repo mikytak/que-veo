@@ -1,16 +1,17 @@
-# 🎲 ¿Qué veo hoy? (España)
+# 📺 Teletexto · ¡Mira esto!
 
-Web con estética de teletexto que te sugiere una serie (con episodio al azar) y/o una peli
-de tus plataformas de streaming en España: Netflix, Disney+, Prime Video, HBO Max, Dropout y Pluto TV.
-Se puede filtrar por plataforma, tipo, categoría ("me apetece…") y duración.
+Una web con estética de teletexto que te sugiere **una serie (con episodio al azar) y una peli** de tus plataformas de streaming en España.
 
-## Cómo usarla
-1. Abre la web.
-2. Pega tu clave gratuita de TMDB (themoviedb.org → Ajustes → API). Se guarda solo en tu navegador.
-3. Pulsa **Sorpréndeme**.
+Plataformas: Netflix, Disney+, Prime Video, HBO Max, Dropout, Pluto TV, Filmin, Movistar Plus+, SkyShowtime, Apple TV+, RTVE Play y Crunchyroll.
+Filtros: plataforma, tipo (series / pelis), «me apetece…» (comedia, romance, drama, anime, dragones y mazmorras…) y duración máxima de la peli.
 
-Todo funciona en el navegador; no hay servidor.
+- Recuerda tus plataformas y categorías en tu navegador.
+- Se puede instalar en el móvil como app (añadir a pantalla de inicio).
+- No guarda datos de nadie.
+
+## Archivos
+`index.html` (la web), `manifest.webmanifest`, `sw.js` e iconos (para instalarla como app).
 
 ## Créditos
-Datos: [TMDB](https://www.themoviedb.org). Disponibilidad en streaming: JustWatch.
-Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.
+Datos: [TMDB](https://www.themoviedb.org). Disponibilidad en streaming: [JustWatch](https://www.justwatch.com).
+This product uses the TMDB API but is not endorsed or certified by TMDB.

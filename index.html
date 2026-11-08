@@ -3,7 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>¿Qué veo hoy? · España</title>
+<title>Teletexto</title>
+<meta name="description" content="Teletexto para elegir qué ver: una serie (con episodio al azar) y una peli de tus plataformas de streaming en España.">
+<meta property="og:title" content="Teletexto · ¡Mira esto!">
+<meta property="og:description" content="Pulsa el botón rojo y deja que el azar elija tu serie y tu peli de hoy.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Teletexto">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>
 :root{color-scheme:dark;--y:#ffff00;--c:#00ffff;--g:#00ff00;--m:#ff00ff;--r:#ff0000;--b:#0000ff;--white:#fff;--black:#101318}
 *{box-sizing:border-box;border-radius:0}
@@ -51,14 +63,15 @@ footer{margin-top:34px;font-size:.85rem;color:#aaa}
 .fast button{font:inherit;font-size:1rem;text-transform:uppercase;border:0;padding:8px 2px;cursor:pointer;color:#000;text-shadow:none}
 [hidden]{display:none!important}
 input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margin-top:6px}
+.top{flex-wrap:wrap}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
 <body>
 <main>
-<div class="top"><span class="y">P888</span><span class="w">Tele-Veo</span><span class="c" id="clk"></span></div>
-<h1>¿Qué veo hoy?<small>España</small></h1>
-<p class="sub">Catálogo real de tus plataformas en España. Un título al azar, y si es serie, un episodio al azar.</p>
+<div class="top"><span class="y" id="pg">P888</span><span class="w" id="ph">¡MIRA ESTO!</span><span class="c" id="clk"></span></div>
+<h1>Teletexto<small>¡Mira esto! · España</small></h1>
+<p class="sub" id="tag">Catálogo real de tus plataformas en España. Un título al azar, y si es serie, un episodio al azar.</p>
 
 <details id="cfg" open>
   <summary>Clave de TMDB</summary>
@@ -75,7 +88,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margi
 <h2>Me apetece…</h2>
 <div class="chips" id="cats"></div>
 <p class="sub" style="margin:6px 0 0">Sin marcar = cualquier cosa. Si marcas varias, saco una al azar.</p>
-<button class="main" id="surprise" disabled>✨ Sorpréndeme</button>
+<button class="main" id="surprise" disabled>▶ ¡Pulsa y mira!</button>
 
 <h2>O busca una serie</h2>
 <div class="row" style="margin-top:0"><input id="q" placeholder="Nombre de la serie"><button class="sec" id="go">Buscar</button></div>
@@ -84,9 +97,13 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margi
 <div id="out" aria-live="polite"><div id="o-tv"></div><div id="o-movie"></div></div>
 <details><summary>Episodios vistos</summary><div class="row"><button class="sec" id="clr">Borrar vistos</button></div></details>
 
-<footer>Datos: TMDB. Disponibilidad en streaming: JustWatch. Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.</footer>
+<footer>
+<p><a href="https://www.themoviedb.org" target="_blank" rel="noopener"><img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDB" height="14" onerror="this.replaceWith('TMDB')"></a></p>
+<p>This product uses the TMDB API but is not endorsed or certified by TMDB.<br>Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.</p>
+<p>Datos de disponibilidad en streaming: <a href="https://www.justwatch.com" target="_blank" rel="noopener">JustWatch</a>. Esta web no guarda datos de nadie: tus ajustes se quedan en tu navegador.</p>
+</footer>
 </main>
-<nav class="fast"><button id="fr" style="background:#f00;color:#fff">Sorprender</button><button id="fg" style="background:#0f0">Otro</button><button id="fy" style="background:#ff0">Visto</button><button id="fc" style="background:#0ff">Buscar</button></nav>
+<nav class="fast"><button id="fr" style="background:#f00;color:#fff">¡Pulsa!</button><button id="fg" style="background:#0f0">Otro</button><button id="fy" style="background:#ff0">Visto</button><button id="fc" style="background:#0ff">Buscar</button></nav>
 
 <script>
 const P={netflix:['Netflix','#ff0000',/^netflix/i,'#fff'],disney:['Disney+','#3d5cff',/disney/i,'#fff'],prime:['Prime Video','#00ffff',/^amazon prime video/i,'#000'],hbo:['HBO Max','#ff00ff',/hbo|^max$/i,'#000'],dropout:['Dropout','#ffff00',/dropout/i,'#000'],pluto:['Pluto TV','#00ff00',/^pluto/i,'#000'],
@@ -136,11 +153,11 @@ function chips(){
   $('dur').hidden=!(selK.size===1&&selK.has('movie'));
 }
 $('plats').onclick=e=>{
-  if(e.target.closest('[data-all]')){const av=Object.keys(P).filter(k=>(ids[k]||[]).length);av.every(k=>selP.has(k))?selP.clear():av.forEach(k=>selP.add(k));chips();return}
-  const b=e.target.closest('[data-p]');if(!b)return;const k=b.dataset.p;selP.has(k)?selP.delete(k):selP.add(k);chips()};
-$('kinds').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;selK.has(k)?selK.delete(k):selK.add(k);chips()};
-$('cats').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const k=b.dataset.c;selC.has(k)?selC.delete(k):selC.add(k);chips()};
-$('durr').oninput=()=>{const v=+$('durr').value;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'};
+  if(e.target.closest('[data-all]')){const av=Object.keys(P).filter(k=>(ids[k]||[]).length);av.every(k=>selP.has(k))?selP.clear():av.forEach(k=>selP.add(k));chips();sp();return}
+  const b=e.target.closest('[data-p]');if(!b)return;const k=b.dataset.p;selP.has(k)?selP.delete(k):selP.add(k);chips();sp()};
+$('kinds').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;selK.has(k)?selK.delete(k):selK.add(k);chips();sp()};
+$('cats').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const k=b.dataset.c;selC.has(k)?selC.delete(k):selC.add(k);chips();sp()};
+$('durr').oninput=()=>{const v=+$('durr').value;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min';sp()};
 
 async function init(){
   if(!KEY){$('cfgMsg').textContent='Pega tu clave para empezar.';return}
@@ -160,7 +177,7 @@ async function init(){
       try{net:for(const q of['Dimension 20','Game Changer','Um, Actually']){const s1=await api('/search/tv',{query:q});
         for(const r of s1.results.slice(0,3)){const d=await api('/tv/'+r.id);const n=(d.networks||[]).find(x=>/dropout/i.test(x.name));if(n){dropNet=n.id;ids.dropout=[n.id];break net}}}}catch(e){}
     }
-    selP=new Set(Object.keys(P).filter(k=>ids[k].length));
+    {const all=Object.keys(P).filter(k=>ids[k].length),sv0=pf&&pf.p?pf.p.filter(k=>all.includes(k)):[];selP=new Set(sv0.length?sv0:all)}
     const miss=Object.keys(P).filter(k=>!ids[k].length).map(k=>P[k][0]);
     $('cfgMsg').textContent='Listo.'+(miss.length?` No he encontrado en España: ${miss.join(', ')}.`:'')+(dropFallback?' Dropout no consta en España en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).':'')+(dropNet?' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en España).':'');
     $('cfg').open=false;$('surprise').disabled=false;chips();
@@ -270,6 +287,17 @@ $('fr').onclick=()=>$('surprise').click();
 $('fg').onclick=()=>{const b=document.querySelector('[data-a="again"]')||document.querySelector('[data-a="next"]');if(b)b.click()};
 $('fy').onclick=()=>{const b=document.querySelector('[data-a="seen"]');if(b)b.click()};
 $('fc').onclick=()=>{$('q').focus();$('q').scrollIntoView({block:'center'})};
+const TAGS=['Sin scroll infinito: el azar decide por ti.','Página 888: el único canal sin anuncios de pizzas.','Deja de buscar. Empieza a ver.','Un episodio al azar, como los de antes: lo que echen.','Tu mando está de vacaciones. Pulsa el botón rojo.','Teletexto de verdad: cero pestañas, cero dudas.'];
+const PH=['¡RESPONDA OTRA VEZ!','COMODÍN DEL PÚBLICO','EL ROSCO FINAL','PREGUNTA DEL MILLÓN','CARTA DE AJUSTE','VOLVEMOS TRAS LA PUBLI','CINE DE BARRIO','SESIÓN DE TARDE','EL TIEMPO: SOFÁ Y MANTA','¡DALE AL BOTÓN ROJO!','SIN CORTES PUBLICITARIOS','TELEDIARIO 2.ª EDICIÓN','ESPECIAL SOBREMESA','¡ESTAMOS EN DIRECTO!'];
+const AURA=['+1000 AURA','AURA INFINITA','67 = +67 AURA'];
+let pn=Math.random()<1/15?67:1+Math.floor(Math.random()*899);
+$('pg').textContent='P'+String(pn).padStart(3,'0');
+$('ph').textContent=pn===67?AURA[Math.floor(Math.random()*AURA.length)]:PH[Math.floor(Math.random()*PH.length)];
+$('tag').textContent=TAGS[Math.floor(Math.random()*TAGS.length)];
+const pf=ld('qvh-prefs',null);
+if(pf){if(pf.k&&pf.k.length)selK=new Set(pf.k);if(pf.c)selC=new Set(pf.c.filter(x=>C[x]));if(pf.d){$('durr').value=pf.d;const v=+pf.d;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'}}
+const sp=()=>sv('qvh-prefs',{p:Object.keys(ids).length?[...selP]:(pf&&pf.p)||[],k:[...selK],c:[...selC],d:$('durr').value});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 chips();init();
 </script>
 </body>
