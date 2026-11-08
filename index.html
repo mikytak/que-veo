@@ -4,10 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Teletexto</title>
-<meta name="description" content="Teletexto para elegir qué ver: una serie (con episodio al azar) y una peli de tus plataformas de streaming en España.">
+<meta name="description" content="Teletexto para elegir qué ver: una serie (con episodio al azar) y una peli de tus plataformas de streaming (España y otros países).">
 <meta property="og:title" content="Teletexto · ¡Mira esto!">
 <meta property="og:description" content="Pulsa el botón rojo y deja que el azar elija tu serie y tu peli de hoy.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://mikytak.github.io/teletexto/">
+<meta property="og:image" content="https://mikytak.github.io/teletexto/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -64,13 +69,14 @@ footer{margin-top:34px;font-size:.85rem;color:#aaa}
 [hidden]{display:none!important}
 input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margin-top:6px}
 .top{flex-wrap:wrap}
+select{font:inherit;color:var(--y);background:#000;border:2px solid #fff;padding:6px 10px;width:100%}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
 <body>
 <main>
 <div class="top"><span class="y" id="pg">P888</span><span class="w" id="ph">¡MIRA ESTO!</span><span class="c" id="clk"></span></div>
-<h1>Teletexto<small>¡Mira esto! · España</small></h1>
+<h1>Teletexto<small>¡Mira esto! · <span id="ctry">España</span></small></h1>
 <p class="sub" id="tag">Catálogo real de tus plataformas en España. Un título al azar, y si es serie, un episodio al azar.</p>
 
 <details id="cfg" open>
@@ -80,6 +86,8 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--y);margi
   <p class="msg" id="cfgMsg"></p>
 </details>
 
+<h2>País</h2>
+<select id="reg" aria-label="País"></select>
 <h2>Plataformas</h2>
 <div class="chips" id="plats"></div>
 <h2>Tipo</h2>
@@ -115,13 +123,16 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-let KEY=ld('qvh-key','')||'2c6005f592032977700dd12ba5929be7',seen=ld('qvh-seen',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
+// --- Ajustes para publicar ---
+const PROXY='';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
+const EMBED_KEY='2c6005f592032977700dd12ba5929be7';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
+let KEY=ld('qvh-key','')||EMBED_KEY,seen=ld('qvh-seen',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
 
 async function api(path,params={}){
-  const u=new URL('https://api.themoviedb.org/3'+path);
+  const u=new URL((PROXY||'https://api.themoviedb.org')+'/3'+path);
   for(const[k,v]of Object.entries(params))u.searchParams.set(k,v);
   const h={};
-  if(KEY.length>40)h.Authorization='Bearer '+KEY;else u.searchParams.set('api_key',KEY);
+  if(!PROXY){if(KEY.length>40)h.Authorization='Bearer '+KEY;else u.searchParams.set('api_key',KEY)}
   const r=await fetch(u,{headers:h});
   if(!r.ok)throw new Error(r.status);
   return r.json();
@@ -146,7 +157,7 @@ const durOK=()=>selK.size===1&&selK.has('movie')&&+$('durr').value<240;
 function chips(){
   const av=Object.keys(P).filter(k=>(ids[k]||[]).length),all=av.length>0&&av.every(k=>selP.has(k));
   $('plats').innerHTML=Object.entries(P).map(([k,[n,c,,f]])=>{const has=(ids[k]||[]).length;
-    return `<button class="chip ${selP.has(k)?'on':''}" data-p="${k}" style="--c:${c};--f:${f}" ${has?'':'disabled title="No aparece en España en TMDB"'}>${n}</button>`}).join('')
+    return `<button class="chip ${selP.has(k)?'on':''}" data-p="${k}" style="--c:${c};--f:${f}" ${has?'':'disabled title="No aparece en '+CT[REG]+' en TMDB"'}>${n}</button>`}).join('')
     +`<button class="chip" data-all="1">${all?'✖ Ninguna':'✔ Todas'}</button>`;
   $('kinds').innerHTML=[['tv','Series'],['movie','Pelis']].map(([k,n])=>`<button class="chip ${selK.has(k)?'on':''}" data-k="${k}">${n}</button>`).join('');
   $('cats').innerHTML=Object.entries(C).map(([k,d])=>`<button class="chip ${selC.has(k)?'on':''}" data-c="${k}"${d.dnd?' style="--c:#ffff00;--f:#000"':''}>${d.n}</button>`).join('');
@@ -160,10 +171,11 @@ $('cats').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const k=
 $('durr').oninput=()=>{const v=+$('durr').value;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min';sp()};
 
 async function init(){
-  if(!KEY){$('cfgMsg').textContent='Pega tu clave para empezar.';return}
-  $('cfgMsg').textContent='Cargando plataformas de España…';
+  if(PROXY)$('cfg').hidden=true;
+  if(!KEY&&!PROXY){$('cfgMsg').textContent='Pega tu clave para empezar.';return}
+  $('cfgMsg').textContent='Cargando plataformas de '+CT[REG]+'…';
   try{
-    const [a,b]=await Promise.all([api('/watch/providers/tv',{watch_region:'ES',language:'es-ES'}),api('/watch/providers/movie',{watch_region:'ES',language:'es-ES'})]);
+    const [a,b]=await Promise.all([api('/watch/providers/tv',{watch_region:REG,language:'es-ES'}),api('/watch/providers/movie',{watch_region:REG,language:'es-ES'})]);
     const all=[...a.results,...b.results];ids={};
     for(const[k,v]of Object.entries(P))ids[k]=[...new Set(all.filter(p=>(v[2].test(p.provider_name)||(v[4]||[]).includes(p.provider_id))&&!/ channel/i.test(p.provider_name)).map(p=>p.provider_id))];
     dropFallback=false;
@@ -177,9 +189,9 @@ async function init(){
       try{net:for(const q of['Dimension 20','Game Changer','Um, Actually']){const s1=await api('/search/tv',{query:q});
         for(const r of s1.results.slice(0,3)){const d=await api('/tv/'+r.id);const n=(d.networks||[]).find(x=>/dropout/i.test(x.name));if(n){dropNet=n.id;ids.dropout=[n.id];break net}}}}catch(e){}
     }
-    {const all=Object.keys(P).filter(k=>ids[k].length),sv0=pf&&pf.p?pf.p.filter(k=>all.includes(k)):[];selP=new Set(sv0.length?sv0:all)}
+    {const all=Object.keys(P).filter(k=>ids[k].length),sv0=keepSel&&pf&&pf.p?pf.p.filter(k=>all.includes(k)):[];selP=new Set(sv0.length?sv0:all);keepSel=false}
     const miss=Object.keys(P).filter(k=>!ids[k].length).map(k=>P[k][0]);
-    $('cfgMsg').textContent='Listo.'+(miss.length?` No he encontrado en España: ${miss.join(', ')}.`:'')+(dropFallback?' Dropout no consta en España en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).':'')+(dropNet?' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en España).':'');
+    $('cfgMsg').textContent='Listo.'+(miss.length?` No he encontrado en ${CT[REG]}: ${miss.join(', ')}.`:'')+(dropFallback?' Dropout no consta en '+CT[REG]+' en TMDB: uso su catálogo de EE. UU./Reino Unido/Canadá (suele ser muy parecido).':'')+(dropNet?' Dropout: lo busco por su canal en TMDB (solo series, sin comprobar disponibilidad en España).':'');
     $('cfg').open=false;$('surprise').disabled=false;chips();
   }catch(e){$('cfgMsg').textContent='No he podido conectar con TMDB: revisa la clave ('+e.message+').';}
 }
@@ -196,7 +208,7 @@ async function catParams(c,t){
 async function query(pl,type,cp){
   const net=pl==='dropout'&&dropNet;
   if(net&&type!=='tv')return null;
-  for(const rg of(pl==='dropout'&&dropFallback?['US','GB','CA']:['ES'])){
+  for(const rg of(pl==='dropout'&&dropFallback?['US','GB','CA']:[REG])){
     const base=net?{with_networks:dropNet,sort_by:'popularity.desc',language:'es-ES',...cp}
       :{with_watch_providers:ids[pl].join('|'),watch_region:rg,with_watch_monetization_types:FREE.includes(pl)?'free|ads|flatrate':'flatrate',sort_by:'popularity.desc','vote_count.gte':dropFallback&&pl==='dropout'?1:30,language:'es-ES',...cp};
     if(type==='movie'&&durOK())base['with_runtime.lte']=$('durr').value;
@@ -245,7 +257,7 @@ async function show(type,it,src){
   const [prov,det]=await Promise.all([
     api(`/${type}/${it.id}/watch/providers`).catch(()=>null),
     type==='tv'?api('/tv/'+it.id,{language:'es-ES'}).catch(()=>null):api('/movie/'+it.id,{language:'es-ES'}).catch(()=>null)]);
-  const es=prov&&prov.results&&prov.results.ES;
+  const es=prov&&prov.results&&prov.results[REG];
   const names=es?[...new Set([...(es.flatrate||[]),...(es.free||[]),...(es.ads||[])].map(p=>p.provider_name))]:[];
   if(src==='dropout'&&dropNet&&!names.length)names.push('Dropout (según su canal en TMDB)');
   if(dropFallback&&prov&&prov.results)for(const rg of['US','GB','CA']){const fl=prov.results[rg]&&prov.results[rg].flatrate;if(fl&&fl.some(p=>ids.dropout.includes(p.provider_id))){names.push('Dropout (catálogo de '+rg+')');break}}
@@ -259,7 +271,7 @@ async function show(type,it,src){
   const mins=type==='movie'&&det&&det.runtime?' · '+det.runtime+' min':'';
   $('o-'+type).innerHTML=`<div class="card">${it.poster_path?`<img src="https://image.tmdb.org/t/p/w342${it.poster_path}" alt="">`:''}<div class="b">
     <h3>${esc(title)}</h3><small>${type==='tv'?'Serie':'Peli'}${year?' · '+year:''}${mins}${it.vote_average?' · ★ '+it.vote_average.toFixed(1):''}</small>
-    <p><small>${names.length?'En España: '+esc(names.join(', ')):'No aparece en streaming (suscripción) en España ahora mismo.'}</small></p>
+    <p><small>${names.length?'En '+CT[REG]+': '+esc(names.join(', ')):'No aparece en streaming (suscripción) en '+CT[REG]+' ahora mismo.'}</small></p>
     ${ep?`<div class="ep">T${ep[0]} · E${ep[1]}${ep[2]?`<small>${esc(ep[2])}</small>`:''}</div>${ep[3]?`<p class="sub">${esc(ep[3])}</p>`:''}`:`<p class="sub">${esc(it.overview||'')}</p>`}
     ${note?`<p class="msg">${note}</p>`:''}
     <div class="row">${type==='tv'?`<button class="sec" data-a="again" data-t="${type}">🔁 Otro episodio</button>`:''}<button class="sec" data-a="seen" data-t="${type}">✅ Visto</button><button class="sec" data-a="next" data-t="${type}">🎲 Otra ${type==='tv'?'serie':'peli'}</button></div></div></div>`;
@@ -294,6 +306,11 @@ let pn=Math.random()<1/15?67:1+Math.floor(Math.random()*899);
 $('pg').textContent='P'+String(pn).padStart(3,'0');
 $('ph').textContent=pn===67?AURA[Math.floor(Math.random()*AURA.length)]:PH[Math.floor(Math.random()*PH.length)];
 $('tag').textContent=TAGS[Math.floor(Math.random()*TAGS.length)];
+const CT={ES:'España',MX:'México',AR:'Argentina',CO:'Colombia',CL:'Chile',PE:'Perú',UY:'Uruguay',US:'EE. UU.',PT:'Portugal',FR:'Francia',IT:'Italia',DE:'Alemania',GB:'Reino Unido'};
+let REG=ld('qvh-reg','ES'),keepSel=true;if(!CT[REG])REG='ES';
+$('reg').innerHTML=Object.entries(CT).map(([k,n])=>`<option value="${k}"${k===REG?' selected':''}>${n}</option>`).join('');
+$('ctry').textContent=CT[REG];
+$('reg').onchange=()=>{REG=$('reg').value;sv('qvh-reg',REG);$('ctry').textContent=CT[REG];keepSel=false;init()};
 const pf=ld('qvh-prefs',null);
 if(pf){if(pf.k&&pf.k.length)selK=new Set(pf.k);if(pf.c)selC=new Set(pf.c.filter(x=>C[x]));if(pf.d){$('durr').value=pf.d;const v=+pf.d;$('durv').textContent=v>=240?'sin límite':'hasta '+v+' min'}}
 const sp=()=>sv('qvh-prefs',{p:Object.keys(ids).length?[...selP]:(pf&&pf.p)||[],k:[...selK],c:[...selC],d:$('durr').value});

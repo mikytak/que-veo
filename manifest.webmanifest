@@ -1,7 +1,7 @@
 {
  "name": "Teletexto",
  "short_name": "Teletexto",
- "description": "Una serie y una peli al azar de tus plataformas en España",
+ "description": "Una serie y una peli al azar de tus plataformas de streaming",
  "start_url": ".",
  "scope": ".",
  "display": "standalone",

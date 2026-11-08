@@ -1,6 +1,6 @@
 # 📺 Teletexto · ¡Mira esto!
 
-Una web con estética de teletexto que te sugiere **una serie (con episodio al azar) y una peli** de tus plataformas de streaming en España.
+Una web con estética de teletexto que te sugiere **una serie (con episodio al azar) y una peli** de tus plataformas de streaming (España por defecto, con selector de país).
 
 Plataformas: Netflix, Disney+, Prime Video, HBO Max, Dropout, Pluto TV, Filmin, Movistar Plus+, SkyShowtime, Apple TV+, RTVE Play y Crunchyroll.
 Filtros: plataforma, tipo (series / pelis), «me apetece…» (comedia, romance, drama, anime, dragones y mazmorras…) y duración máxima de la peli.
