@@ -135,7 +135,7 @@ const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}ca
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 // --- Ajustes para publicar ---
 const PROXY='';  // URL de tu Worker de Cloudflare, sin / al final. Si la pones, la clave ya no hace falta.
-const EMBED_KEY='2c6005f592032977700dd12ba5929be7';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
+const EMBED_KEY='f6bd6cfff99c26992cee88e9f93c8a4b';  // Clave dentro del código. Bórrala (deja '') cuando uses PROXY.
 let KEY=ld('qvh-key','')||EMBED_KEY,seen=ld('qvh-seen',{}),hid=ld('qvh-hid',{}),ids={},selP=new Set(),selK=new Set(['tv','movie']),last={},selC=new Set(),dropFallback=false,dropNet=0;
 
 async function api(path,params={}){
