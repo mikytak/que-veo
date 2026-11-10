@@ -143,6 +143,7 @@ const ld=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}ca
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 // --- Idiomas (es / ca / en): el texto base está en castellano y se traduce al vuelo ---
 const I18N={
+'✕ Cerrar resultados':['✕ Tancar resultats','✕ Close results'],
 '— Ninguno —':['— Cap —','— None —'],
 'Contexto':['Context','Context'],
 'Playlist':['Playlist','Playlist'],
@@ -508,7 +509,7 @@ async function draw(type){
   }catch(e){o.innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 async function surprise(){
-  $('o-vote').innerHTML='';vt=null;
+  $('o-vote').innerHTML='';vt=null;$('plRes').innerHTML='';$('res').innerHTML='';
   if(!ctxK&&(!selP.size||!selK.size)){$('o-tv').innerHTML='<p class="msg">Activa al menos una plataforma y un tipo.</p>';$('o-movie').innerHTML='';return}
   const ks=kinds();for(const t of['tv','movie'])if(!ks.includes(t))$('o-'+t).innerHTML='';
   await Promise.all(ks.map(draw));
@@ -567,23 +568,24 @@ function plAdd(id,type,it){
 }
 const plItem=x=>({id:x.id,title:x.type==='movie'?x.title:undefined,name:x.type==='tv'?x.title:undefined,poster_path:x.poster_path,release_date:x.type==='movie'&&x.year?x.year+'-01-01':undefined,first_air_date:x.type==='tv'&&x.year?x.year+'-01-01':undefined});
 async function plGo(){
-  const l=plCur();$('o-vote').innerHTML='';vt=null;
+  const l=plCur();$('o-vote').innerHTML='';vt=null;$('plRes').innerHTML='';
   if(!l.items.length){$('o-tv').innerHTML='<p class="msg">La lista está vacía: añade títulos con el buscador.</p>';$('o-movie').innerHTML='';goTo($('out'));return}
   const x=rnd(l.items);for(const t of['tv','movie'])if(t!==x.type)$('o-'+t).innerHTML='';
   await show(x.type,plItem(x),'pl');
 }
 let plr=[];
+const CLOSE=k=>`<button class="sec" data-${k}="1" style="margin-top:8px">✕ Cerrar resultados</button>`;
 async function plFind(){
   const q=$('plq').value.trim();if(!q)return;
   try{const r=await api('/search/multi',{query:q,language:LG()});plr=r.results.filter(x=>x.media_type==='tv'||x.media_type==='movie').slice(0,6);
-    $('plRes').innerHTML=plr.map((x,i)=>{const y=(x.release_date||x.first_air_date||'').slice(0,4);return `<div class="vc">${x.poster_path?`<img src="https://image.tmdb.org/t/p/w154${x.poster_path}" alt="">`:''}<div class="vt"><b>${esc(x.title||x.name)}</b><br><small>${x.media_type==='tv'?'Serie':'Peli'}${y?' · '+y:''}</small></div><button class="sec" data-pa="${i}">＋</button></div>`}).join('')||'<p class="msg">Sin resultados.</p>'}
+    $('plRes').innerHTML=plr.map((x,i)=>{const y=(x.release_date||x.first_air_date||'').slice(0,4);return `<div class="vc">${x.poster_path?`<img src="https://image.tmdb.org/t/p/w154${x.poster_path}" alt="">`:''}<div class="vt"><b>${esc(x.title||x.name)}</b><br><small>${x.media_type==='tv'?'Serie':'Peli'}${y?' · '+y:''}</small></div><button class="sec" data-pa="${i}">＋</button></div>`}).join('')||'<p class="msg">Sin resultados.</p>';if(plr.length)$('plRes').insertAdjacentHTML('beforeend',CLOSE('pc'))}
   catch(e){$('plRes').innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 $('plSel').onchange=()=>{PL.cur=$('plSel').value;spl();plRender()};
 $('plNew').onclick=()=>{const n=prompt(tl('Nombre de la lista:'));if(n&&n.trim()){const l={id:'l'+Date.now(),name:n.trim(),items:[]};PL.lists.push(l);PL.cur=l.id;spl();plRender()}};
 $('plDel').onclick=()=>{const c=plCur();if(c.id==='w'){if(c.items.length&&confirm(tl('¿Vaciar «Viendo ahora»?'))){c.items=[];spl();plRender()}return}if(confirm(tl('¿Borrar esta lista?'))){PL.lists=PL.lists.filter(l=>l.id!==c.id);PL.cur='w';spl();plRender()}};
 $('plGo').onclick=plGo;$('plFind').onclick=plFind;$('plq').onkeydown=e=>{if(e.key==='Enter')plFind()};
-$('plRes').onclick=e=>{const b=e.target.closest('[data-pa]');if(!b)return;const x=plr[+b.dataset.pa];plAdd(PL.cur,x.media_type,x);b.textContent='✔'};
+$('plRes').onclick=e=>{if(e.target.closest('[data-pc]')){$('plRes').innerHTML='';return}const b=e.target.closest('[data-pa]');if(!b)return;const x=plr[+b.dataset.pa];plAdd(PL.cur,x.media_type,x);b.textContent='✔'};
 $('plList').onclick=e=>{const b=e.target.closest('[data-pr]');if(!b)return;plCur().items.splice(+b.dataset.pr,1);spl();plRender()};
 async function shareIt(l,b){
   try{if(navigator.share){await navigator.share({text:l.share,url:SITE});return}}catch(e){if(e&&e.name==='AbortError')return}
@@ -635,7 +637,8 @@ async function search(){
   try{
     const r=await api('/search/tv',{query:q,language:LG()});
     $('res').innerHTML=r.results.slice(0,6).map((x,i)=>`<button data-i="${i}">${esc(x.name)} <small>${(x.first_air_date||'').slice(0,4)}</small></button>`).join('')||'<p class="msg">Sin resultados.</p>';
-    $('res').onclick=ev=>{const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';$('o-movie').innerHTML='';$('o-vote').innerHTML='';vt=null;last.movie=null;show('tv',r.results[+b.dataset.i])};
+    if(r.results.length)$('res').insertAdjacentHTML('beforeend',CLOSE('ic'));
+    $('res').onclick=ev=>{if(ev.target.closest('[data-ic]')){$('res').innerHTML='';return}const b=ev.target.closest('[data-i]');if(!b)return;$('res').innerHTML='';$('o-movie').innerHTML='';$('o-vote').innerHTML='';vt=null;last.movie=null;show('tv',r.results[+b.dataset.i])};
   }catch(e){$('res').innerHTML='<p class="msg">Error: '+esc(e.message)+'</p>'}
 }
 $('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter')search()};
