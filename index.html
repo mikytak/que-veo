@@ -76,6 +76,7 @@ select{font:inherit;color:var(--y);background:#000;border:2px solid #fff;padding
 .vc .vn{min-width:2ch;text-align:right;color:#ff0}
 input.bad{border-color:#f00}
 #out{scroll-margin-top:8px}
+input[type=search]{-webkit-appearance:none;appearance:none}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
@@ -89,7 +90,7 @@ input.bad{border-color:#f00}
 <details id="cfg" open>
   <summary>Clave de TMDB</summary>
   <p class="sub">Necesitas una clave gratuita de <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org</a> (la «API Key» o el «Token de lectura»). Se guarda solo en tu navegador.</p>
-  <div class="row"><input id="key" placeholder="Pega aquí tu clave" autocomplete="off"><button class="sec" id="saveKey">Guardar y cargar</button></div>
+  <div class="row"><input id="key" name="qvh-key-x" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Pega aquí tu clave"><button class="sec" id="saveKey">Guardar y cargar</button></div>
   <p class="msg" id="cfgMsg"></p>
 </details>
 
@@ -98,7 +99,7 @@ input.bad{border-color:#f00}
 <h2>Plataformas</h2>
 <div class="chips" id="plats"></div>
 <h2>Tipo · Años</h2>
-<div class="chips" style="align-items:center"><div class="chips" id="kinds"></div><input id="yr" style="width:11em" list="yrl" placeholder="Años: 1955-1998" title="Un tramo (1955-1998), un año, o «1990-» para «desde 1990»" aria-label="Años" inputmode="numeric" autocomplete="off"><datalist id="yrl"><option value="-1979" label="Clásicos (hasta 1979)"><option value="1980-1989" label="80s"><option value="1990-1999" label="90s"><option value="2000-2009" label="2000s"><option value="2010-2019" label="2010s"><option value="2020-" label="Recientes (desde 2020)"></datalist></div>
+<div class="chips" style="align-items:center"><div class="chips" id="kinds"></div><input id="yr" name="qvh-yr-x" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" style="width:11em" list="yrl" placeholder="Años: 1955-1998" title="Un tramo (1955-1998), un año, o «1990-» para «desde 1990»" aria-label="Años" inputmode="numeric"><datalist id="yrl"><option value="-1979" label="Clásicos (hasta 1979)"><option value="1980-1989" label="80s"><option value="1990-1999" label="90s"><option value="2000-2009" label="2000s"><option value="2010-2019" label="2010s"><option value="2020-" label="Recientes (desde 2020)"></datalist></div>
 <div id="dur" hidden><h2>Duración</h2><div><span class="sub">Peli de <b id="durv">sin límite</b></span><input type="range" id="durr" min="60" max="240" step="10" value="240"></div></div>
 <h2>Me apetece…</h2>
 <div class="chips" id="cats"></div>
@@ -108,16 +109,16 @@ input.bad{border-color:#f00}
 <div class="row"><button class="chip" id="ctxOnly">Solo mis plataformas</button><button class="sec" id="guide" disabled>📺 Ver programación</button></div>
 <p class="sub" style="margin:6px 0 0">Elige un contexto y «Pulsa y mira» y «Noche en grupo» se ciñen a él (ignora categorías y años).</p>
 <button class="main" id="surprise" disabled>▶ ¡Pulsa y mira!</button>
-<div class="row"><button class="sec" id="vote" disabled>🗳 Noche en grupo</button><label class="sub">¿Cuántos votáis? <select id="nv" style="width:auto"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label></div>
+<div class="row"><button class="sec" id="vote" disabled>🗳 Noche en grupo</button><button class="sec" id="resetF" title="Quita categorías, contexto, años y duración. No toca tus plataformas ni tus listas.">↺ Quitar filtros</button><label class="sub">¿Cuántos votáis? <select id="nv" style="width:auto"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label></div>
 
 <h2>O busca una serie</h2>
-<div class="row" style="margin-top:0"><input id="q" placeholder="Nombre de la serie"><button class="sec" id="go">Buscar</button></div>
+<div class="row" style="margin-top:0"><input id="q" type="search" enterkeyhint="search" name="qvh-q-x" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Nombre de la serie"><button class="sec" id="go">Buscar</button></div>
 <div class="res" id="res"></div>
 
 <h2>Mis playlists</h2>
 <div class="row" style="margin-top:0"><select id="plSel" style="flex:1;min-width:10em" aria-label="Playlist"></select><button class="sec" id="plNew">＋ Nueva</button><button class="sec" id="plDel" aria-label="Borrar">🗑</button></div>
 <div class="row"><button class="main" id="plGo" style="margin-top:0">▶ Sortear de la lista</button></div>
-<div class="row"><input id="plq" placeholder="Añadir a la lista: busca una serie o peli"><button class="sec" id="plFind">Buscar</button></div>
+<div class="row"><input id="plq" type="search" enterkeyhint="search" name="qvh-plq-x" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Añadir a la lista: busca una serie o peli"><button class="sec" id="plFind">Buscar</button></div>
 <div class="res" id="plRes"></div>
 <div id="plList"></div>
 <div id="out" aria-live="polite"><div id="o-tv"></div><div id="o-movie"></div><div id="o-vote"></div></div>
@@ -144,6 +145,8 @@ const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 // --- Idiomas (es / ca / en): el texto base está en castellano y se traduce al vuelo ---
 const I18N={
 '✕ Cerrar resultados':['✕ Tancar resultats','✕ Close results'],
+'↺ Quitar filtros':['↺ Treure filtres','↺ Clear filters'],
+'Quita categorías, contexto, años y duración. No toca tus plataformas ni tus listas.':['Treu categories, context, anys i durada. No toca les teves plataformes ni les teves llistes.','Clears categories, context, years and length. Doesn’t touch your platforms or lists.'],
 '— Ninguno —':['— Cap —','— None —'],
 'Contexto':['Context','Context'],
 'Playlist':['Playlist','Playlist'],
@@ -666,6 +669,7 @@ $('reg').onchange=()=>{REG=$('reg').value;sv('qvh-reg',REG);$('ctry').textConten
 $('yr').oninput=()=>{yrs();sp()};
 updLists();
 $('ctxSel').onchange=()=>{ctxK=$('ctxSel').value||null;chips()};
+$('resetF').onclick=()=>{const had=ctxK;selC.clear();ctxK=null;ctxOnly=false;selK=new Set(['tv','movie']);$('yr').value='';yrs();$('durr').value=240;$('durr').oninput();if(had){$('o-vote').innerHTML='';vt=null}chips();sp()};
 $('ctxOnly').onclick=()=>{ctxOnly=!ctxOnly;chips()};
 $('guide').onclick=startGuide;
 const pf=ld('qvh-prefs',null);
